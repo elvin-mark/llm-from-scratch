@@ -1,15 +1,17 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -O3 -ffast-math
+LDFLAGS = -lm
 
 # To use BLAS, run: make run USE_BLAS=1
 ifeq ($(USE_BLAS), 1)
-	CFLAGS += -DUSE_BLAS -lopenblas
+	CFLAGS += -DUSE_BLAS
+	LDFLAGS += -lopenblas
 endif
 
 all: run run_cu
 
 run: run.c
-	$(CC) $(CFLAGS) -o run run.c -lm
+	$(CC) $(CFLAGS) -o run run.c $(LDFLAGS)
 
 run_cu: run.cu
 	nvcc -O3 --use_fast_math -o run_cu run.cu -lcublas

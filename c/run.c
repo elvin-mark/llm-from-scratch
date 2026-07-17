@@ -240,13 +240,14 @@ void load_vocab(const char* filepath) {
         printf("Error opening %s\n", filepath);
         exit(1);
     }
-    fread(&vocab_size, sizeof(int), 1, f);
+    int read_count = fread(&vocab_size, sizeof(int), 1, f);
+    if (read_count != 1) exit(1);
     vocab = (char**)malloc(vocab_size * sizeof(char*));
     for (int i = 0; i < vocab_size; i++) {
         int len;
-        fread(&len, sizeof(int), 1, f);
+        read_count = fread(&len, sizeof(int), 1, f);
         vocab[i] = (char*)malloc(len + 1);
-        if(len > 0) fread(vocab[i], 1, len, f);
+        if(len > 0) read_count = fread(vocab[i], 1, len, f);
         vocab[i][len] = '\0';
     }
     fclose(f);
