@@ -53,16 +53,16 @@ sequenceDiagram
     participant Batch as Dataloader
     participant Model as TinyLLM
     participant Loss as CrossEntropy
-    participant Opt as AdamW Optimizer
+    participant Optimizer as AdamW Optimizer
 
     Batch->>Model: Provide sequence x
     Model->>Model: Forward pass
     Model->>Loss: Return logits
     Batch->>Loss: Provide target sequence y
     Loss->>Loss: Compute Error
-    Loss->>Opt: Backpropagate (loss.backward)
-    Opt->>Model: Update weights (step)
-    Opt->>Opt: Zero gradients (zero_grad)
+    Loss->>Optimizer: Backpropagate (loss.backward)
+    Optimizer->>Model: Update weights (step)
+    Optimizer->>Optimizer: Zero gradients (zero_grad)
 ```
 
 1. **Forward Pass**: The batch of inputs (`x`) is passed through `TinyLLM` to generate `logits`.
