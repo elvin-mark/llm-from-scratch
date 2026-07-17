@@ -26,33 +26,26 @@ This repository contains all the building blocks to train and generate text from
 
 ## Getting Started
 
+This project uses **`uv`** as its package and environment manager to guarantee consistency and prevent python version/GIL conflicts (especially on macOS).
+
 ### 1. Installation
 
-This project requires Python 3.13 or later. You can install the dependencies using your favorite package manager:
-
-Using `uv` (recommended):
+Install dependencies and synchronize your local virtual environment:
 ```bash
 uv sync
 ```
 
-Using standard `pip`:
-```bash
-pip install .
-```
-
 ### 2. Prepare the Tokenizer and Corpus
 
-To train the tokenizer, you need a dataset (such as a TSV file with format `id \t language \t sentence` from Tatoeba).
-
-Example step to download and extract a Korean sentences dataset:
+To train the tokenizer, download and extract a TSV sentences dataset (e.g. from Tatoeba):
 ```bash
 wget https://downloads.tatoeba.org/exports/per_language/kor/kor_sentences.tsv.bz2
 bunzip2 ./kor_sentences.tsv.bz2
 ```
 
-Then train the BPE tokenizer and create the `corpus.txt`:
+Then train the BPE tokenizer and generate the text corpus using `uv run`:
 ```bash
-python data.py ./kor_sentences.tsv
+uv run python data.py ./kor_sentences.tsv
 ```
 This produces:
 - `corpus.txt`: Cleaned raw text.
@@ -62,14 +55,24 @@ This produces:
 
 To train the `TinyLLM` model on the generated corpus:
 ```bash
-python train.py
+uv run python train.py
 ```
-This will train the model for 10 epochs (by default) and output the weights to `tiny_llm.pth`.
+This will train the model for 10 epochs (by default) and save the weights to `tiny_llm.pth`.
 
 ### 4. Generate Text
 
 Once trained, generate sentences autoregressively:
 ```bash
-python generate.py
+uv run python generate.py
 ```
-You can customize generation settings by importing and calling the `generate` function with custom parameters (e.g. `temperature`, `top_k`, `max_tokens`).
+
+---
+
+## Mechanistic Interpretability Dashboard
+
+An interactive dashboard is available to inspect the model's inner workings (Self-Attention maps, Logit Lens, FFN activation scans, and gradient-based word saliency).
+
+To start the dashboard, run:
+```bash
+uv run streamlit run interpretability.py
+```
