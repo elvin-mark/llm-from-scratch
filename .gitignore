@@ -4,4 +4,6 @@ tiny_llm.pth
 *.onnx
 *.onnx.data
 
-__pycache__/
+__pycache__/model.bin
+vocab.bin
+run
