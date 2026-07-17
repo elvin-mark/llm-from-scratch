@@ -57,14 +57,14 @@ The Transformer Block is the core engine of the model.
 
 ```mermaid
 flowchart TD
-    In[Input h] --> Add1[+]
-    Add1 --> Out1[h]
+    In[Input x] --> Add1[+]
+    Add1 --> Out1[Intermediate h]
     In --> Norm1[RMSNorm]
     Norm1 --> Attn[Multi-Head Attention]
     Attn --> Add1
     
     Out1 --> Add2[+]
-    Add2 --> Final[Output h']
+    Add2 --> Final[Output out]
     Out1 --> Norm2[RMSNorm]
     Norm2 --> FFN[SwiGLU FFN]
     FFN --> Add2
