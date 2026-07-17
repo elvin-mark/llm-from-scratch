@@ -1,0 +1,5 @@
+corpus.txt
+tokenizer.json
+tiny_llm.pth
+
+__pycache__/
