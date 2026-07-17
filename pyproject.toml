@@ -1,7 +1,10 @@
 [project]
 name = "llm-from-scratch"
 version = "0.1.0"
-description = "Add your description here"
+description = "A simple custom LLM trained from scratch in PyTorch"
 readme = "README.md"
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "torch>=2.0.0",
+    "tokenizers>=0.19.0",
+]
