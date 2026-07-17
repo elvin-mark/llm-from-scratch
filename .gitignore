@@ -1,5 +1,7 @@
 corpus.txt
 tokenizer.json
 tiny_llm.pth
+*.onnx
+*.onnx.data
 
 __pycache__/
