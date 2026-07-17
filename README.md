@@ -16,17 +16,29 @@ This repository contains all the building blocks to train and generate text from
 
 ## File Structure
 
-- [model.py](file:///Users/elvinmarkmv/Development/Repositories/elvin-mark/llm-from-scratch/model.py): Core neural network components (`RMSNorm`, `Attention`, `FeedForward`, `TransformerBlock`, and `TinyLLM`).
-- [data.py](file:///Users/elvinmarkmv/Development/Repositories/elvin-mark/llm-from-scratch/data.py): Tokenizer training pipeline and PyTorch dataset loader (`SentencesDataset`).
-- [train.py](file:///Users/elvinmarkmv/Development/Repositories/elvin-mark/llm-from-scratch/train.py): Training loop configuration, optimizer setup, and checkpointing.
-- [generate.py](file:///Users/elvinmarkmv/Development/Repositories/elvin-mark/llm-from-scratch/generate.py): Autoregressive text generator with Top-K and temperature scaling.
-- [pyproject.toml](file:///Users/elvinmarkmv/Development/Repositories/elvin-mark/llm-from-scratch/pyproject.toml): Project metadata and dependencies.
+- [model.py](model.py): Core neural network components (`RMSNorm`, `Attention`, `FeedForward`, `TransformerBlock`, and `TinyLLM`).
+- [data.py](data.py): Tokenizer training pipeline and PyTorch dataset loader (`SentencesDataset`).
+- [train.py](train.py): Training loop configuration, optimizer setup, and checkpointing.
+- [generate.py](generate.py): Autoregressive text generator with Top-K and temperature scaling.
+- [interpretability.py](interpretability.py): Streamlit dashboard for mechanistic interpretability.
+- [export_onnx.py](export_onnx.py): Script to export PyTorch weights into optimized ONNX/Int8 formats.
+- [ui/](ui/): Frontend browser application utilizing ONNX Runtime Web.
+- [docs/](docs/): Extensive documentation detailing the LLaMA-based architecture and training flow.
+
+---
+
+## Extensive Documentation
+
+If you are interested in exactly how the mathematics and auto-regressive flows of this model work, we provide detailed markdown documentation with Mermaid flowchart diagrams:
+
+- [Architecture Breakdown](docs/architecture.md): Deep dive into Pre-RMSNorm, RoPE, and SwiGLU FFNs.
+- [Training Pipeline](docs/training.md): Overview of dataset ingestion, hyperparameter choices, and the CrossEntropy backward pass loop.
 
 ---
 
 ## Getting Started
 
-This project uses **`uv`** as its package and environment manager to guarantee consistency and prevent python version/GIL conflicts (especially on macOS).
+This project uses **`uv`** as its package and environment manager to guarantee consistency and prevent python version/GIL conflicts.
 
 ### 1. Installation
 
@@ -47,9 +59,7 @@ Then train the BPE tokenizer and generate the text corpus using `uv run`:
 ```bash
 uv run python data.py ./kor_sentences.tsv
 ```
-This produces:
-- `corpus.txt`: Cleaned raw text.
-- `tokenizer.json`: The trained BPE tokenizer configuration.
+This produces `corpus.txt` and `tokenizer.json`.
 
 ### 3. Train the Model
 
@@ -57,7 +67,7 @@ To train the `TinyLLM` model on the generated corpus:
 ```bash
 uv run python train.py
 ```
-This will train the model for 10 epochs (by default) and save the weights to `tiny_llm.pth`.
+This will train the model and save the weights to `tiny_llm.pth`.
 
 ### 4. Generate Text
 
@@ -65,6 +75,26 @@ Once trained, generate sentences autoregressively:
 ```bash
 uv run python generate.py
 ```
+
+---
+
+## Serverless Web UI Inference (ONNX)
+
+You can run this model entirely inside any modern web browser utilizing **ONNX Runtime Web** (WebGL/WASM acceleration)—no backend API required!
+
+1. **Export the Model**:
+   Convert the `tiny_llm.pth` weights to `.onnx` and apply Int8 quantization:
+   ```bash
+   # Make sure onnx and onnxruntime are installed
+   uv pip install onnx onnxruntime onnxscript
+   uv run python export_onnx.py --quantize
+   ```
+2. **Launch the UI**:
+   Since browsers block fetching local binary files, serve the directory locally:
+   ```bash
+   python3 -m http.server 8000
+   ```
+   Then open [http://localhost:8000/ui/](http://localhost:8000/ui/) to chat with your custom LLM right in the browser!
 
 ---
 
