@@ -4,6 +4,7 @@ tiny_llm.pth
 *.onnx
 *.onnx.data
 
-__pycache__/model.bin
+__pycache__/
+**/model.bin
 vocab.bin
 run
