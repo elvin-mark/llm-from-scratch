@@ -5,7 +5,8 @@ from tokenizers import Tokenizer
 from data import SentencesDataset
 from model import TinyLLM
 
-def train(tokenizer_path: str = "tokenizer.json", corpus_path = "corpus.txt"):
+
+def train(tokenizer_path: str = "tokenizer.json", corpus_path="corpus.txt"):
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using device:", device)
 
@@ -46,14 +47,15 @@ def train(tokenizer_path: str = "tokenizer.json", corpus_path = "corpus.txt"):
 
             if batch_idx % 100 == 0:
                 print(
-                    f"Epoch {epoch+1}/{epochs} | Batch {batch_idx}/{len(dataloader)} | Loss: {loss.item():.4f}"
+                    f"Epoch {epoch + 1}/{epochs} | Batch {batch_idx}/{len(dataloader)} | Loss: {loss.item():.4f}"
                 )
 
         avg_loss = total_loss / len(dataloader)
-        print(f"Epoch {epoch+1} completed. Average Loss: {avg_loss:.4f}")
+        print(f"Epoch {epoch + 1} completed. Average Loss: {avg_loss:.4f}")
 
     torch.save(model.state_dict(), "tiny_llm.pth")
     print("Model saved to tiny_llm.pth")
+
 
 if __name__ == "__main__":
     train()

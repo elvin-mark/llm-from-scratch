@@ -12,6 +12,7 @@ class RMSNorm(nn.Module):
     A variant of LayerNorm that removes the mean-centering operation, improving
     training speed while maintaining similar performance. Used in Llama architectures.
     """
+
     def __init__(self, dim, eps=1e-6):
         super().__init__()
         self.eps = eps
@@ -73,6 +74,7 @@ class Attention(nn.Module):
     """
     Standard Multi-Head Attention mechanism enriched with Rotary Embeddings.
     """
+
     def __init__(self, dim, n_heads):
         super().__init__()
         self.n_heads = n_heads
@@ -120,6 +122,7 @@ class FeedForward(nn.Module):
     Instead of the traditional two-layer MLP with ReLU/GELU, this uses three linear
     projections and a Swish (SiLU) activation gate, as seen in Llama.
     """
+
     def __init__(self, dim, hidden_dim):
         super().__init__()
         self.w1 = nn.Linear(dim, hidden_dim, bias=False)
@@ -135,6 +138,7 @@ class TransformerBlock(nn.Module):
     """
     A single Transformer layer combining Attention and FeedForward blocks with pre-RMSNorm.
     """
+
     def __init__(self, dim, n_heads, ffn_dim):
         super().__init__()
         self.attention = Attention(dim, n_heads)
@@ -156,6 +160,7 @@ class TinyLLM(nn.Module):
     """
     The main Causal Language Model built using a Llama-like architecture.
     """
+
     def __init__(
         self, vocab_size, dim=128, n_layers=4, n_heads=4, ffn_dim=512, max_seq_len=128
     ):

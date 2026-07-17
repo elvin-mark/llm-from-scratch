@@ -3,13 +3,14 @@ import torch.nn.functional as F
 from tokenizers import Tokenizer
 from model import TinyLLM
 
+
 def generate(
     max_tokens: int = 64,
     temperature: float = 0.8,
     top_k: int = 50,
     num_sentences: int = 5,
     tokenizer_path: str = "tokenizer.json",
-    model_path: str = "tiny_llm.pth"
+    model_path: str = "tiny_llm.pth",
 ):
     """
     Generates text using the trained TinyLLM model.
@@ -115,7 +116,7 @@ def generate(
 
         # Decode the final list of token IDs back into readable strings
         decoded_text = tokenizer.decode(generated_token_ids)
-        print(f"Generated {i+1}: {decoded_text}")
+        print(f"Generated {i + 1}: {decoded_text}")
 
 
 if __name__ == "__main__":

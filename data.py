@@ -27,9 +27,10 @@ def prepare_and_train_tokenizer(
     print("Extracting sentences...")
     # Step 1: Read TSV and extract the text column
     # The expected TSV format is: id \t language \t sentence
-    with open(input_file, "r", encoding="utf-8") as f_in, open(
-        corpus_file, "w", encoding="utf-8"
-    ) as f_out:
+    with (
+        open(input_file, "r", encoding="utf-8") as f_in,
+        open(corpus_file, "w", encoding="utf-8") as f_out,
+    ):
         for line in f_in:
             parts = line.strip().split("\t")
             if len(parts) >= 3:
@@ -60,13 +61,13 @@ def prepare_and_train_tokenizer(
     )
 
 
-
 # --- Dataset and Training ---
 class SentencesDataset(Dataset):
     """
     Custom Dataset loader for processing raw text sentences into token IDs.
     Applies padding and truncation to enforce a fixed maximum length.
     """
+
     def __init__(self, file_path, tokenizer_path, max_length=64):
         self.tokenizer = Tokenizer.from_file(tokenizer_path)
         # Enable truncation for tokenization
@@ -106,6 +107,7 @@ class SentencesDataset(Dataset):
 
 if __name__ == "__main__":
     import sys
+
     # wget https://downloads.tatoeba.org/exports/per_language/kor/kor_sentences.tsv.bz2
     # bunzip2 ./kor_sentences.tsv.bz2
-    prepare_and_train_tokenizer(input_file=sys.argv[1],corpus_file="corpus.txt")
+    prepare_and_train_tokenizer(input_file=sys.argv[1], corpus_file="corpus.txt")
