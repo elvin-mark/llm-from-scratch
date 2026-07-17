@@ -1,39 +1,47 @@
-# TinyLLM in Pure C
+# TinyLLM in Pure C & CUDA
 
-This directory contains a standalone, pure C inference engine for `TinyLLM`. 
+This directory contains standalone inference engines for `TinyLLM` written in pure C and CUDA.
 
-Taking heavy inspiration from Andrej Karpathy's `llama2.c`, this implementation ditches the heavy PyTorch runtime and Python overhead. Instead, it runs the entire forward pass (RMSNorm, RoPE, SwiGLU, and Attention) using bare-metal C arrays and pointers.
+Taking heavy inspiration from Andrej Karpathy's `llama2.c`, this implementation ditches the heavy PyTorch runtime and Python overhead. It runs the entire forward pass (RMSNorm, RoPE, SwiGLU, and Attention) using bare-metal arrays, pointers, and optimized matrix multiplications.
 
-## Features
+## Implementations
 
-- **Zero Dependencies**: Requires only standard C libraries (`<math.h>`, `<stdio.h>`, etc.).
-- **Memory Mapped**: Uses POSIX `mmap()` to instantly map the model weights into RAM directly from the filesystem without huge memory allocations.
-- **Blazing Fast**: Because there's no Python interpreter overhead or dynamic graph tracing, inference is extremely fast.
+1. **`run.c`**: A pure C implementation. By default, it runs single-threaded matrix multiplications. If `USE_BLAS=1` is provided during compilation, it uses hardware-accelerated OpenBLAS for massive CPU speedups.
+2. **`run.cu`**: A CUDA C++ implementation designed for NVIDIA GPUs. It uses `cuBLAS` for matrix multiplications and custom `__global__` kernels for operations like `RMSNorm`, `RoPE`, and `SwiGLU` to keep execution entirely on the device.
 
 ## How it Works
 
-1. **`export.py`**: A Python script that loads your `tiny_llm.pth` PyTorch model and serializes all of its `float32` tensors directly into a contiguous binary sequence (`model.bin`). It also dumps the HuggingFace `tokenizer.json` into a binary format (`vocab.bin`) for the C code to read.
-2. **`run.c`**: The main C executable. It defines the struct pointers into the memory-mapped `model.bin`, loads the vocabulary, allocates the KV cache, and runs the autoregressive generation loop.
+- **`export.py`**: A Python script that loads your `tiny_llm.pth` PyTorch model and serializes all of its `float32` tensors directly into a contiguous binary sequence (`model.bin`). It also dumps the HuggingFace `tokenizer.json` into a binary format (`vocab.bin`) for the C code to read.
+- Both executables define struct pointers into the memory-mapped `model.bin`, load the vocabulary, allocate the KV cache, and run the autoregressive generation loop.
 
 ## Usage
 
-### 1. Build the Executable
-First, compile the C code using GCC:
-```bash
-make
-```
-
-### 2. Export the Weights
+### 1. Export the Weights
 Use Python to dump the PyTorch weights and vocabulary into binary format. Ensure you have your virtual environment active or use `uv run`:
 ```bash
 uv run python export.py
 ```
-*This will generate `model.bin` and `vocab.bin` in this directory.*
 
-### 3. Run Inference
-Execute the compiled binary:
+### 2. CPU Inference (Pure C)
+Compile the C code using GCC:
+```bash
+# Standard compile
+make run
+
+# Compile with OpenBLAS acceleration (requires libopenblas-dev)
+make run USE_BLAS=1
+```
+Execute the binary:
 ```bash
 ./run
 ```
 
-The model will immediately stream tokens autoregressively to `stdout`.
+### 3. GPU Inference (CUDA)
+If you have an NVIDIA GPU and the CUDA Toolkit (`nvcc`) installed (e.g., on Google Colab):
+```bash
+make run_cu
+```
+Execute the CUDA binary:
+```bash
+./run_cu
+```

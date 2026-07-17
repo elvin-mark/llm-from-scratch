@@ -8,6 +8,10 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#ifdef USE_BLAS
+#include <cblas.h>
+#endif
+
 // Model Config
 typedef struct {
     int dim;
@@ -67,6 +71,9 @@ void rmsnorm(float* o, float* x, float* weight, int size) {
 
 void matmul(float* xout, float* x, float* w, int n, int d) {
     // W is shape (d, n) -> transposed logic based on PyTorch Linear
+#ifdef USE_BLAS
+    cblas_sgemv(CblasRowMajor, CblasNoTrans, d, n, 1.0f, w, n, x, 1, 0.0f, xout, 1);
+#else
     for (int i = 0; i < d; i++) {
         float val = 0.0f;
         for (int j = 0; j < n; j++) {
@@ -74,6 +81,7 @@ void matmul(float* xout, float* x, float* w, int n, int d) {
         }
         xout[i] = val;
     }
+#endif
 }
 
 void softmax(float* x, int size) {
