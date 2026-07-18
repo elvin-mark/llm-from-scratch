@@ -1,6 +1,5 @@
 import struct
 import torch
-import json
 import os
 import sys
 
@@ -8,6 +7,7 @@ import sys
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tokenizers import Tokenizer
 from model import TinyLLM
+
 
 def export_model():
     print("Loading model and tokenizer...")
@@ -21,17 +21,28 @@ def export_model():
     ffn_dim = 512
     max_seq_len = 64
 
-    model = TinyLLM(vocab_size=vocab_size, dim=dim, n_layers=n_layers, n_heads=n_heads, ffn_dim=ffn_dim, max_seq_len=max_seq_len)
-    model.load_state_dict(torch.load("../tiny_llm.pth", map_location="cpu", weights_only=True))
+    model = TinyLLM(
+        vocab_size=vocab_size,
+        dim=dim,
+        n_layers=n_layers,
+        n_heads=n_heads,
+        ffn_dim=ffn_dim,
+        max_seq_len=max_seq_len,
+    )
+    model.load_state_dict(
+        torch.load("../tiny_llm.pth", map_location="cpu", weights_only=True)
+    )
     model.eval()
 
     print("Exporting model to model.bin...")
     with open("model.bin", "wb") as f:
         # Write header (256 bytes to leave room for future expansion)
         # struct format: 7 ints (dim, ffn_dim, n_layers, n_heads, n_kv_heads, vocab_size, max_seq_len)
-        header = struct.pack("iiiiiii", dim, ffn_dim, n_layers, n_heads, n_heads, vocab_size, max_seq_len)
+        header = struct.pack(
+            "iiiiiii", dim, ffn_dim, n_layers, n_heads, n_heads, vocab_size, max_seq_len
+        )
         # Pad with zeros to 256 bytes
-        header += b'\x00' * (256 - len(header))
+        header += b"\x00" * (256 - len(header))
         f.write(header)
 
         # Helper to write tensor
@@ -53,7 +64,7 @@ def export_model():
             write_tensor(layer.feed_forward.w3.weight)
         write_tensor(model.norm.weight)
         write_tensor(model.output.weight)
-    
+
     print("Exporting tokenizer to vocab.bin...")
     vocab = tokenizer.get_vocab()
     # Invert vocab map
@@ -61,11 +72,12 @@ def export_model():
     with open("vocab.bin", "wb") as f:
         f.write(struct.pack("i", vocab_size))
         for i in range(vocab_size):
-            token_str = inv_vocab.get(i, "").encode('utf-8')
+            token_str = inv_vocab.get(i, "").encode("utf-8")
             f.write(struct.pack("i", len(token_str)))
             f.write(token_str)
 
     print("Done! You can now run `make` and execute the C code.")
+
 
 if __name__ == "__main__":
     export_model()
