@@ -8,13 +8,16 @@ ifeq ($(USE_BLAS), 1)
 	LDFLAGS += -lopenblas
 endif
 
-all: run run_cu
+all: run run_cu runq
 
 run: run.c
 	$(CC) $(CFLAGS) -o run run.c $(LDFLAGS)
+
+runq: runq.c
+	$(CC) $(CFLAGS) -o runq runq.c $(LDFLAGS)
 
 run_cu: run.cu
 	nvcc -O3 --use_fast_math -o run_cu run.cu -lcublas
 
 clean:
-	rm -f run run_cu model.bin vocab.bin
+	rm -f run run_cu runq model.bin model_q8.bin vocab.bin
