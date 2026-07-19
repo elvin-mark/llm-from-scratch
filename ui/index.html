@@ -5,21 +5,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TinyLLM Web Interface</title>
     <link rel="stylesheet" href="style.css" />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap"
-      rel="stylesheet"
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet" />
+    <!-- MathJax for rendering LaTeX -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <!-- ONNX Runtime Web -->
     <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web/dist/ort.min.js"></script>
   </head>
   <body>
-    <div class="container">
-      <header>
-        <h1>TinyLLM <span class="highlight">Web</span></h1>
-        <p>Running entirely in your browser using ONNX Runtime</p>
-      </header>
+    <div class="app-layout">
+      
+      <!-- Documentation Panel (Left) -->
+      <aside class="docs-panel">
+        <header class="docs-header">
+          <h1>TinyLLM <span class="highlight">Architecture</span></h1>
+          <p>A completely custom, causal language model built from scratch.</p>
+        </header>
+        
+        <div class="docs-content">
+          <section>
+            <h2>The Mathematics</h2>
+            <p>The complete inference step of the network, from token IDs to output logits, can be summarized mathematically by the following consolidated equations:</p>
+            <div class="math-block">
+              $$
+              \begin{aligned}
+              H_0 &= \text{Embed}(X) \\
+              H_l &= F_l(H_{l-1}) \quad \text{for } l \in \{1, 2, \dots, N\} \\
+              \text{Logits}(X) &= \text{RMSNorm}_{\text{final}}(H_N) W_{\text{head}}^T \\
+              F_l(H) &= \tilde{H} + \left[ \text{SiLU}\left( \text{RMSNorm}_{\text{ffn}}(\tilde{H}) W_1^T \right) \odot \left( \text{RMSNorm}_{\text{ffn}}(\tilde{H}) W_3^T \right) \right] W_2^T \\
+              \text{where} \quad \tilde{H} &= H + A_l\big(\text{RMSNorm}_{\text{attn}}(H)\big) \\
+              A_l(x) &= \text{softmax}\left(\frac{\text{RoPE}(x W_q^T)\text{RoPE}(x W_k^T)^T}{\sqrt{d_{\text{head}}}} + M\right)(x W_v^T) W_o^T
+              \end{aligned}
+              $$
+            </div>
+          </section>
+          
+          <section>
+            <h2>Implementation Details</h2>
+            <ul>
+              <li><strong>Rotary Positional Embeddings (RoPE):</strong> Injects relative positional information directly into the attention mechanism by rotating the query and key representations.</li>
+              <li><strong>RMSNorm (Root Mean Square Normalization):</strong> Used instead of standard LayerNorm. It removes the mean-centering step for computational efficiency. Applied in a "Pre-Norm" fashion before Attention and FFN blocks.</li>
+              <li><strong>SwiGLU Activation:</strong> The Feed-Forward Network uses the Swish-Gated Linear Unit, utilizing the element-wise Hadamard product to gate information flow.</li>
+              <li><strong>Byte-Pair Encoding (BPE):</strong> A custom Python tokenizer that parses raw text and merges adjacent character pairs based on corpus frequency.</li>
+            </ul>
+          </section>
+        </div>
+      </aside>
 
-      <main>
+      <!-- Chat Interface Panel (Right) -->
+      <main class="chat-panel">
+        <header class="chat-header">
+          <h2>Test the <span class="highlight">Model</span></h2>
+          <p>Running entirely in your browser using ONNX Runtime</p>
+        </header>
+
         <div class="chat-container">
           <div id="output" class="output-area">
             <div class="message system">
@@ -40,35 +79,17 @@
 
         <div class="controls">
           <div class="control-group">
-            <label for="temp-slider"
-              >Temperature: <span id="temp-val">0.8</span></label
-            >
-            <input
-              type="range"
-              id="temp-slider"
-              min="0.1"
-              max="2.0"
-              step="0.1"
-              value="0.8"
-            />
+            <label for="temp-slider">Temperature: <span id="temp-val">0.8</span></label>
+            <input type="range" id="temp-slider" min="0.1" max="2.0" step="0.1" value="0.8" />
           </div>
           <div class="control-group">
-            <label for="tokens-slider"
-              >Max Tokens: <span id="tokens-val">32</span></label
-            >
-            <input
-              type="range"
-              id="tokens-slider"
-              min="1"
-              max="64"
-              step="1"
-              value="32"
-            />
+            <label for="tokens-slider">Max Tokens: <span id="tokens-val">32</span></label>
+            <input type="range" id="tokens-slider" min="1" max="64" step="1" value="32" />
           </div>
         </div>
       </main>
+      
     </div>
-
     <script type="module" src="script.js"></script>
   </body>
 </html>
