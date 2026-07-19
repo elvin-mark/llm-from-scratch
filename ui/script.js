@@ -76,6 +76,8 @@ const generateBtn = document.getElementById("generate-btn");
 const resetBtn = document.getElementById("reset-btn");
 const tempSlider = document.getElementById("temp-slider");
 const tempVal = document.getElementById("temp-val");
+const topkSlider = document.getElementById("topk-slider");
+const topkVal = document.getElementById("topk-val");
 
 // State
 let session = null;
@@ -90,20 +92,46 @@ if (tempSlider) {
     (e) => (tempVal.textContent = parseFloat(e.target.value).toFixed(1)),
   );
 }
+if (topkSlider) {
+  topkSlider.addEventListener(
+    "input",
+    (e) => (topkVal.textContent = e.target.value),
+  );
+}
+
+// Example Chips
+document.querySelectorAll('.example-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    if(!promptInput.disabled) {
+      promptInput.value = chip.textContent;
+      generateBtn.click();
+    }
+  });
+});
 
 async function initialize() {
+  const initLoader = document.getElementById('init-loader');
+  const initText = document.getElementById('init-text');
+  const examplePrompts = document.getElementById('example-prompts');
+  
   try {
     const tResp = await fetch("../tokenizer.json");
     const tJson = await tResp.json();
     tokenizer = new BasicTokenizer(tJson);
 
-    textDisplay.innerHTML = '<span class="placeholder-text" style="color: var(--text-muted);">Loading ONNX Runtime and Model parameters...</span>';
+    if(initText) initText.innerHTML = 'Loading ONNX Runtime and Model parameters...';
 
     session = await ort.InferenceSession.create("../tiny_llm_quantized.onnx", {
       executionProviders: ["wasm"],
     });
 
-    textDisplay.innerHTML = '<span class="placeholder-text" style="color: var(--text-muted);">✅ Model loaded! Enter a prompt below to start.</span>';
+    if(initLoader) initLoader.style.display = 'none';
+    if(initText) {
+      initText.innerHTML = '✅ Model loaded! Enter a prompt below or pick an example to start.';
+      initText.style.color = 'var(--primary)';
+    }
+    if(examplePrompts) examplePrompts.style.display = 'block';
+    
     promptInput.disabled = false;
     generateBtn.disabled = false;
     promptInput.focus();
@@ -113,7 +141,8 @@ async function initialize() {
     }
   } catch (err) {
     console.error(err);
-    textDisplay.innerHTML = `<span style="color: red;">Error loading model: ${err.message}</span>`;
+    if(initLoader) initLoader.style.display = 'none';
+    if(initText) initText.innerHTML = `<span style="color: red;">Error loading model: ${err.message}</span>`;
   }
 }
 
@@ -164,10 +193,12 @@ async function predictNextTokens() {
 
     const indexedProbs = probs.map((p, idx) => ({ prob: p, id: idx }));
     indexedProbs.sort((a, b) => b.prob - a.prob);
-    const top5 = indexedProbs.slice(0, 5);
+    
+    const topk = topkSlider ? parseInt(topkSlider.value, 10) : 5;
+    const topKItems = indexedProbs.slice(0, topk);
 
     tokenCandidates.innerHTML = '';
-    top5.forEach(item => {
+    topKItems.forEach(item => {
       const tokenStr = tokenizer.idToToken[item.id] || "[UNK]";
       const displayStr = tokenStr.startsWith(" ") ? " " + tokenStr.substring(1) : tokenStr.replace(/Ġ/g, " ");
       const probPercent = (item.prob * 100).toFixed(1);
