@@ -1,0 +1,13 @@
+{
+  "hosting": {
+    "site": "llm-from-scratch-edu",
+    "public": "ui",
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ]
+  }
+}
