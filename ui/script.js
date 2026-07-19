@@ -115,14 +115,15 @@ async function initialize() {
   const examplePrompts = document.getElementById('example-prompts');
   
   try {
-    const tResp = await fetch("../tokenizer.json");
+    const tResp = await fetch("assets/tokenizer.json");
     const tJson = await tResp.json();
     tokenizer = new BasicTokenizer(tJson);
 
     if(initText) initText.innerHTML = 'Loading ONNX Runtime and Model parameters...';
 
-    session = await ort.InferenceSession.create("../tiny_llm_quantized.onnx", {
+    session = await ort.InferenceSession.create("assets/tiny_llm_quantized.onnx", {
       executionProviders: ["wasm"],
+      sessionOptions: { numThreads: 1 },
     });
 
     if(initLoader) initLoader.style.display = 'none';
