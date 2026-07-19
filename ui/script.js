@@ -532,66 +532,138 @@ if(attnQueryWords.length > 0) {
   });
 }
 
-// 5. Tokenizer Playground Widget
-const tokenizerPlaygroundInput = document.getElementById('tokenizer-playground-input');
-const tokenizerPlaygroundOutput = document.getElementById('tokenizer-playground-output');
+
+
+// 5. Tokenizer Playground Merges
+const tokenizerInput = document.getElementById('tokenizer-playground-input');
+const bpeVisualizer = document.getElementById('bpe-merge-visualizer');
+const tokenizerOutput = document.getElementById('tokenizer-playground-output');
 const tokenizerCount = document.getElementById('tokenizer-count');
 
-function updateTokenizerPlayground() {
-  if (!tokenizer || !tokenizerPlaygroundInput || !tokenizerPlaygroundOutput) return;
-  const text = tokenizerPlaygroundInput.value;
-  if (!text) {
-    tokenizerPlaygroundOutput.innerHTML = '<div style="color: var(--text-muted);">Tokens will appear here...</div>';
-    tokenizerCount.textContent = '0';
-    return;
-  }
-  
-  const ids = tokenizer.encode(text).filter(id => id !== tokenizer.clsTokenId && id !== tokenizer.unkTokenId); 
-  // NOTE: BasicTokenizer prepends [CLS] by default. We remove it for the playground if present so they just see the text's tokens.
-  // Actually, our BasicTokenizer might not have `clsTokenId` array, it just pushes it first.
-  
-  const displayIds = tokenizer.encode(text);
-  // Remove CLS token from display if it's the first token, to make it cleaner
-  if(displayIds.length > 0 && displayIds[0] === tokenizer.clsTokenId) {
-    displayIds.shift();
-  }
-  
-  tokenizerPlaygroundOutput.innerHTML = '';
-  tokenizerCount.textContent = displayIds.length;
-  
-  // Use colors to differentiate adjacent tokens
-  const colors = [
-    'rgba(99, 102, 241, 0.3)',  // Indigo
-    'rgba(139, 92, 246, 0.3)',  // Purple
-    'rgba(236, 72, 153, 0.3)',  // Pink
-    'rgba(14, 165, 233, 0.3)',  // Sky
-    'rgba(16, 185, 129, 0.3)'   // Emerald
-  ];
-  
-  displayIds.forEach((id, index) => {
-    const tokenStr = tokenizer.idToToken[id] || "[UNK]";
-    let displayStr = tokenStr.startsWith("Ġ") ? " " + tokenStr.substring(1) : tokenStr;
-    // Visually show spaces
-    displayStr = displayStr.replace(/ /g, "␣");
-    
-    const chip = document.createElement('div');
-    chip.style.backgroundColor = colors[index % colors.length];
-    chip.style.border = `1px solid ${colors[index % colors.length].replace('0.3', '0.6')}`;
-    chip.style.padding = '0.4rem 0.8rem';
-    chip.style.borderRadius = '6px';
-    chip.style.fontFamily = 'monospace';
-    chip.style.display = 'flex';
-    chip.style.flexDirection = 'column';
-    chip.style.alignItems = 'center';
-    
-    chip.innerHTML = `
-      <span style="font-size: 1.1rem; color: white;">${displayStr.replace(/</g, '&lt;')}</span>
-      <span style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 0.2rem;">ID: ${id}</span>
-    `;
-    tokenizerPlaygroundOutput.appendChild(chip);
+if (tokenizerInput && bpeVisualizer && tokenizerOutput) {
+  let mergeTimeout;
+  tokenizerInput.addEventListener('input', (e) => {
+    clearTimeout(mergeTimeout);
+    mergeTimeout = setTimeout(() => {
+      if (!tokenizer) return;
+      const text = e.target.value;
+      if (!text) {
+        bpeVisualizer.innerHTML = '<span style="color: var(--text-muted);">Start typing to see character merges...</span>';
+        tokenizerOutput.innerHTML = '';
+        tokenizerCount.textContent = '0';
+        return;
+      }
+      
+      // Simulate merging
+      const chars = Array.from(text).map(c => `<span style="border:1px solid var(--glass-border); padding:0.2rem 0.4rem; border-radius:4px;">${c}</span>`);
+      bpeVisualizer.innerHTML = chars.join(' ');
+      
+      const tokens = tokenizer.encode(text);
+      tokenizerCount.textContent = tokens.length;
+      tokenizerOutput.innerHTML = tokens.map(t => `<span class="example-chip">${tokenizer.idToToken[t] || '[UNK]'}</span>`).join('');
+      
+    }, 500);
   });
 }
 
-if(tokenizerPlaygroundInput) {
-  tokenizerPlaygroundInput.addEventListener('input', updateTokenizerPlayground);
+// RoPE Visualizer
+const ropeSlider = document.getElementById('rope-slider');
+const ropePosVal = document.getElementById('rope-pos-val');
+const ropeCanvas = document.getElementById('rope-canvas');
+if (ropeSlider && ropeCanvas) {
+  const ctx = ropeCanvas.getContext('2d');
+  function drawRoPE(pos) {
+    ctx.clearRect(0, 0, 200, 200);
+    const cx = 100, cy = 100;
+    
+    // Draw axes
+    ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.beginPath();
+    ctx.moveTo(0, cy); ctx.lineTo(200, cy);
+    ctx.moveTo(cx, 0); ctx.lineTo(cx, 200);
+    ctx.stroke();
+    
+    // Rotate vector
+    const angle = pos * (Math.PI / 8); // example angle
+    const r = 80;
+    const x = cx + r * Math.cos(angle);
+    const y = cy - r * Math.sin(angle);
+    
+    ctx.strokeStyle = '#6366f1';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(x, y);
+    ctx.stroke();
+    
+    ctx.fillStyle = '#818cf8';
+    ctx.beginPath();
+    ctx.arc(x, y, 6, 0, Math.PI*2);
+    ctx.fill();
+  }
+  
+  ropeSlider.addEventListener('input', (e) => {
+    const val = parseInt(e.target.value);
+    ropePosVal.textContent = val;
+    drawRoPE(val);
+  });
+  
+  drawRoPE(0);
+}
+
+// RMSNorm Visualizer
+const rmsSlider = document.getElementById('rmsnorm-slider');
+const rmsVal = document.getElementById('rmsnorm-val');
+const rmsBars = document.getElementById('rmsnorm-bars');
+
+if (rmsSlider && rmsBars) {
+  function drawRMSBars(variance) {
+    rmsBars.innerHTML = '';
+    const baseVals = [0.2, -0.5, 0.8, -0.3, 0.6, -0.9, 0.4];
+    
+    // Calculate RMS
+    const scaledVals = baseVals.map(v => v * variance);
+    const rms = Math.sqrt(scaledVals.reduce((acc, val) => acc + val*val, 0) / scaledVals.length) || 1;
+    const normVals = scaledVals.map(v => v / rms);
+    
+    normVals.forEach(v => {
+      const h = Math.abs(v) * 40; // max height ~100px
+      const bar = document.createElement('div');
+      bar.style.width = '20px';
+      bar.style.height = `${h}px`;
+      bar.style.background = v > 0 ? 'var(--primary)' : '#f43f5e';
+      bar.style.borderRadius = '4px 4px 0 0';
+      rmsBars.appendChild(bar);
+    });
+  }
+  
+  rmsSlider.addEventListener('input', (e) => {
+    const val = parseFloat(e.target.value);
+    rmsVal.textContent = val.toFixed(1);
+    drawRMSBars(val);
+  });
+  
+  drawRMSBars(1.0);
+}
+
+// Training Stepper
+const trainStepBtn = document.getElementById('train-step-btn');
+const trainSteps = document.querySelectorAll('.train-step');
+let currentTrainStep = 1;
+
+if (trainStepBtn) {
+  trainStepBtn.addEventListener('click', () => {
+    trainSteps.forEach(s => s.classList.remove('active', 'done'));
+    
+    currentTrainStep++;
+    if(currentTrainStep > 6) currentTrainStep = 1;
+    
+    trainSteps.forEach((s, idx) => {
+      if (idx + 1 < currentTrainStep) {
+        s.classList.add('done');
+      } else if (idx + 1 === currentTrainStep) {
+        s.classList.add('active');
+      }
+    });
+  });
 }

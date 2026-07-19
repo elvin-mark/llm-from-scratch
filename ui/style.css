@@ -861,3 +861,83 @@ h1 {
 .btn-secondary:disabled {
   opacity: 0.4 !important;
 }
+
+/* Flowchart Buttons */
+.flow-btn {
+  background: rgba(99, 102, 241, 0.1);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  color: var(--primary);
+  padding: 0.8rem 1.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  max-width: 300px;
+  transition: all 0.2s;
+}
+.flow-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: var(--primary);
+}
+.flow-arrow {
+  color: var(--text-muted);
+  font-size: 1.5rem;
+}
+
+/* Math Toggle */
+.concept-title {
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}
+.toggle-btn {
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  padding: 0.3rem 0.8rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.toggle-btn:hover {
+  color: var(--text-color);
+  background: rgba(255,255,255,0.1);
+}
+.math-block {
+  background: rgba(0,0,0,0.3);
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 3px solid var(--primary);
+  overflow-x: auto;
+  margin: 1rem 0;
+  transition: opacity 0.3s;
+}
+.math-block.hidden {
+  display: none;
+}
+
+/* Training Stepper */
+.train-step {
+  padding: 0.8rem;
+  border-radius: 6px;
+  color: var(--text-muted);
+  border: 1px solid transparent;
+  transition: all 0.3s;
+}
+.train-step.active {
+  background: rgba(99, 102, 241, 0.15);
+  color: var(--primary);
+  border-color: rgba(99, 102, 241, 0.3);
+  font-weight: 600;
+}
+.train-step.done {
+  color: var(--text-color);
+  opacity: 0.7;
+}
+
+/* Bars Container for RMSNorm */
+.bars-container {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--glass-border);
+  padding-bottom: 2px;
+}

@@ -35,6 +35,10 @@
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
               Architecture & Math
             </button>
+                    <button class="nav-item" data-target="training-section">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+            Training Pipeline
+          </button>
           <button class="nav-item" data-target="impl-section">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><line x1="10" y1="9" x2="8" y2="9"></line></svg>
             Implementation
@@ -100,200 +104,269 @@
           </div>
         </section>
 
+        
         <!-- Tokenizer Playground Section -->
         <section id="tokenizer-section" class="content-section">
           <header class="section-header">
             <h2>Tokenizer <span class="highlight">Playground</span></h2>
-            <p>See exactly how your text is broken down into numerical subword tokens by the Byte-Pair Encoding algorithm.</p>
+            <p>See how the Byte-Pair Encoding (BPE) algorithm splits text into subwords.</p>
           </header>
-          
+
           <div class="docs-content">
+            <div class="widget-card" style="margin-bottom: 2rem;">
+              <h3 style="color: var(--primary); margin-bottom: 1rem;">Live BPE Encoding</h3>
+              <input type="text" id="tokenizer-playground-input" placeholder="Type a sentence here..." style="width: 100%; padding: 1rem; border-radius: 8px; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2); color: white; margin-bottom: 1rem;">
+              
+              <div id="tokenizer-visualizer-area" style="background: rgba(15,23,42,0.5); padding: 1.5rem; border-radius: 8px; min-height: 150px; position: relative;">
+                <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Merge Steps Visualizer:</p>
+                <div id="bpe-merge-visualizer" style="display: flex; flex-wrap: wrap; gap: 0.5rem; font-family: monospace; font-size: 1.2rem; min-height: 60px;">
+                  <span style="color: var(--text-muted);">Start typing to see character merges...</span>
+                </div>
+                <div style="margin-top: 1.5rem; border-top: 1px solid var(--glass-border); padding-top: 1rem;">
+                  <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Final Token IDs (<span id="tokenizer-count">0</span> tokens):</p>
+                  <div id="tokenizer-playground-output" style="display: flex; flex-wrap: wrap; gap: 0.5rem;"></div>
+                </div>
+              </div>
+            </div>
+
             <div class="widget-card">
-              <h3 style="margin-bottom: 1rem;">Enter Text to Tokenize</h3>
-              <textarea id="tokenizer-playground-input" placeholder="Type something here... e.g. Hello world!" rows="4" style="width: 100%; background: rgba(15, 23, 42, 0.5); border: 1px solid var(--glass-border); border-radius: 8px; color: white; padding: 1rem; font-size: 1.1rem; font-family: inherit; margin-bottom: 1rem; resize: vertical; outline: none;"></textarea>
-              
-              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h4 style="color: var(--primary);">Tokenized Output:</h4>
-                <div style="font-size: 0.9rem; color: var(--text-muted);"><span id="tokenizer-count" style="color: white; font-weight: bold;">0</span> tokens</div>
-              </div>
-              
-              <div id="tokenizer-playground-output" style="display: flex; flex-wrap: wrap; gap: 0.5rem; min-height: 100px; padding: 1rem; background: rgba(15, 23, 42, 0.8); border-radius: 8px; border: 1px solid var(--glass-border);">
-                <div style="color: var(--text-muted);">Tokens will appear here...</div>
-              </div>
+              <h3 style="color: var(--primary); margin-bottom: 0.5rem;">How BPE Works</h3>
+              <p style="color: var(--text-color); margin-bottom: 1rem;">The tokenizer first uses a regex pattern to split text into words (e.g. <code>'Hello, world!' → ['Hello', ',', ' world', '!']</code>). It then iteratively merges adjacent characters based on a trained frequency list until no more merges can be made. Decoding is simply looking up the IDs and joining the strings.</p>
             </div>
           </div>
         </section>
 
+        
         <!-- Architecture & Math Section -->
         <section id="math-section" class="content-section">
           <header class="section-header">
             <h2>Architecture & <span class="highlight">Math</span></h2>
-            <p>A step-by-step mathematical breakdown of the TinyLLM forward pass.</p>
+            <p>Explore the mathematical foundations of the Transformer architecture through interactive data flow.</p>
           </header>
-          
+
+          <!-- Sticky TOC -->
+          <div class="sticky-toc" style="position: sticky; top: 0; background: rgba(15,23,42,0.9); padding: 1rem; z-index: 100; border-bottom: 1px solid var(--glass-border); margin-bottom: 2rem; backdrop-filter: blur(10px);">
+            <div style="display: flex; gap: 1rem; overflow-x: auto; font-size: 0.9rem;">
+              <a href="#arch-overview" style="color: var(--primary); text-decoration: none;">Overview</a>
+              <a href="#arch-embedding" style="color: var(--text-muted); text-decoration: none;">1. Embedding</a>
+              <a href="#arch-rope" style="color: var(--text-muted); text-decoration: none;">2. RoPE</a>
+              <a href="#arch-rmsnorm" style="color: var(--text-muted); text-decoration: none;">3. RMSNorm</a>
+              <a href="#arch-attention" style="color: var(--text-muted); text-decoration: none;">4. Attention</a>
+              <a href="#arch-swiglu" style="color: var(--text-muted); text-decoration: none;">5. SwiGLU</a>
+              <a href="#arch-head" style="color: var(--text-muted); text-decoration: none;">6. Output</a>
+              <a href="#arch-equations" style="color: var(--text-muted); text-decoration: none;">Consolidated Math</a>
+            </div>
+          </div>
+
           <div class="docs-content">
-            <p>The complete inference step of the network, from token IDs to output logits, can be summarized mathematically by the following consolidated equations. Below, we break down each mechanism in logical order.</p>
-            <div class="math-block">
-              $$
-              \begin{aligned}
-              H_0 &= \text{Embed}(X) \\
-              H_l &= F_l(H_{l-1}) \quad \text{for } l \in \{1, 2, \dots, N\} \\
-              \text{Logits}(X) &= \text{RMSNorm}_{\text{final}}(H_N) W_{\text{head}}^T \\
-              F_l(H) &= \tilde{H} + \left[ \text{SiLU}\left( \text{RMSNorm}_{\text{ffn}}(\tilde{H}) W_1^T \right) \odot \left( \text{RMSNorm}_{\text{ffn}}(\tilde{H}) W_3^T \right) \right] W_2^T \\
-              \text{where} \quad \tilde{H} &= H + A_l\big(\text{RMSNorm}_{\text{attn}}(H)\big) \\
-              A_l(x) &= \text{softmax}\left(\frac{\text{RoPE}(x W_q^T)\text{RoPE}(x W_k^T)^T}{\sqrt{d_{\text{head}}}} + M\right)(x W_v^T) W_o^T
-              \end{aligned}
-              $$
+            
+            <div id="arch-overview" class="widget-card" style="margin-bottom: 2rem;">
+              <h3 style="color: var(--primary);">Model Overview</h3>
+              <p>The data flows through several stages to predict the next token. Click any stage to deep-link to the chat and ask for an explanation!</p>
+              
+              <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem; margin-top: 1.5rem; padding: 1.5rem; background: rgba(0,0,0,0.2); border-radius: 8px;">
+                <button class="flow-btn" onclick="document.getElementById('prompt-input').value='Explain Token Embeddings'; document.getElementById('generate-btn').click(); document.querySelector('[data-target=\'chat-section\']').click();">Input Tokens</button>
+                <div class="flow-arrow">↓</div>
+                <button class="flow-btn" onclick="document.getElementById('prompt-input').value='Explain RMSNorm'; document.getElementById('generate-btn').click(); document.querySelector('[data-target=\'chat-section\']').click();">RMSNorm</button>
+                <div class="flow-arrow">↓</div>
+                <button class="flow-btn" onclick="document.getElementById('prompt-input').value='Explain RoPE and Attention'; document.getElementById('generate-btn').click(); document.querySelector('[data-target=\'chat-section\']').click();">Self-Attention (with RoPE)</button>
+                <div class="flow-arrow">↓</div>
+                <button class="flow-btn" onclick="document.getElementById('prompt-input').value='Explain SwiGLU'; document.getElementById('generate-btn').click(); document.querySelector('[data-target=\'chat-section\']').click();">SwiGLU FFN</button>
+                <div class="flow-arrow">↓</div>
+                <button class="flow-btn" onclick="document.getElementById('prompt-input').value='Explain the Output Head'; document.getElementById('generate-btn').click(); document.querySelector('[data-target=\'chat-section\']').click();">Output Head</button>
+              </div>
             </div>
 
-            <hr class="section-divider" />
-
-            <!-- 1. Byte-Pair Encoding -->
-            <h3 class="concept-title">1. Byte-Pair Encoding (BPE Tokenization)</h3>
-            <p>Before any math occurs, raw text must be converted into an array of integers. Instead of splitting by words or characters, BPE optimally compresses text by iteratively merging the most frequent adjacent character pairs found in the training corpus.</p>
-            <div class="widget-card">
-              <h4 style="color: var(--primary); margin-bottom: 0.5rem;">Interactive: BPE Tokenizer</h4>
-              <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Watch how individual characters merge into subwords based on frequency rules.</p>
-              <div class="bpe-display">
-                <div class="bpe-tokens" id="bpe-tokens">
-                  <!-- JS will populate tokens -->
-                </div>
+            <!-- 1. Embedding -->
+            <div id="arch-embedding" style="margin-bottom: 3rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 class="concept-title">1. Token Embedding</h3>
+                <button class="toggle-btn" onclick="this.nextElementSibling.classList.toggle('hidden');">Toggle Math</button>
+                <div class="math-block hidden">$$ E \in \mathbb{R}^{V 	imes d} $$</div>
               </div>
-              <div style="display: flex; gap: 1rem;">
-                <button id="bpe-step-btn" class="widget-btn" style="margin-bottom: 0;">Next Merge Step</button>
-                <button id="bpe-reset-btn" class="widget-btn" style="margin-bottom: 0; background: rgba(255,255,255,0.05); color: #94a3b8; border-color: rgba(255,255,255,0.1);">Reset</button>
+              <p>Each token ID acts as an index to look up a dense continuous vector from the embedding matrix. This vector represents the semantic meaning of the token.</p>
+              <div class="widget-card" style="text-align: center;">
+                <p style="font-family: monospace; color: var(--primary);">Token ID: 42 → [0.12, -0.45, 0.88, ..., 0.03]</p>
               </div>
             </div>
 
             <!-- 2. RoPE -->
-            <h3 class="concept-title">2. Rotary Positional Embeddings (RoPE)</h3>
-            <p>Transformers have no inherent sense of order. Unlike absolute positional embeddings that are simply added to the input, RoPE injects positional information by rotating the Query and Key vectors in a complex 2D plane. For a vector pair \((x_1, x_2)\) at position \(m\), the rotation is applied as:</p>
-            <div class="math-block">
-              $$
-              \begin{pmatrix} q_1 \\ q_2 \end{pmatrix} = \begin{pmatrix} \cos(m\theta) & -\sin(m\theta) \\ \sin(m\theta) & \cos(m\theta) \end{pmatrix} \begin{pmatrix} x_1 \\ x_2 \end{pmatrix}
-              $$
-            </div>
-            <p>This allows the attention dot-product to naturally decay as the relative distance between two tokens increases.</p>
-            
-            <!-- 3. Self Attention -->
-            <h3 class="concept-title">3. Multi-Head Self-Attention</h3>
-            <p>Attention is the core mechanism allowing tokens to communicate. For each token, we project it into a Query (\(Q\)). We then compute the dot product between this Query and every previous token's Key (\(K\)) to determine how much "attention" or relevance to assign to it. Finally, we multiply those attention weights by the Values (\(V\)).</p>
-            <div class="math-block">
-              $$
-              \text{Attention}(Q, K, V) = \text{softmax}\left(\frac{Q K^T}{\sqrt{d_k}}\right)V
-              $$
-            </div>
-            <div class="widget-card">
-              <h4 style="color: var(--primary); margin-bottom: 0.5rem;">Interactive: Attention Weights</h4>
-              <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Select a Query word (bottom) to visualize how it calculates its meaning by looking back at previous Key words (top). Thicker lines represent higher attention probabilities.</p>
-              <div class="attention-viz-container">
-                <div class="attn-key-row" id="attn-key-row">
-                  <div class="attn-word">The</div><div class="attn-word">cute</div><div class="attn-word">cat</div><div class="attn-word">purred</div>
-                </div>
-                <div class="attn-lines" id="attn-lines">
-                  <!-- SVG Lines -->
-                </div>
-                <div class="attn-query-row" id="attn-query-row">
-                  <div class="attn-word q-word" data-idx="0">The</div><div class="attn-word q-word" data-idx="1">cute</div><div class="attn-word q-word" data-idx="2">cat</div><div class="attn-word q-word active" data-idx="3">purred</div>
+            <div id="arch-rope" style="margin-bottom: 3rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 class="concept-title">2. Rotary Positional Embedding (RoPE)</h3>
+                <button class="toggle-btn" onclick="this.nextElementSibling.classList.toggle('hidden');">Toggle Math</button>
+                <div class="math-block hidden">$$ R_{\Theta,m}x = (x_1 \cos m	heta_1 - x_2 \sin m	heta_1, x_1 \sin m	heta_1 + x_2 \cos m	heta_1, ...) $$</div>
+              </div>
+              <p>RoPE injects positional information by rotating the Query and Key vectors in a 2D plane based on their position in the sequence.</p>
+              <div class="widget-card">
+                <label>Position (m): <span id="rope-pos-val">0</span></label>
+                <input type="range" id="rope-slider" min="0" max="10" step="1" value="0" style="width: 100%; margin: 1rem 0;">
+                <div style="display: flex; justify-content: center;">
+                  <canvas id="rope-canvas" width="200" height="200" style="border-radius: 50%; border: 1px solid var(--glass-border); background: rgba(0,0,0,0.2);"></canvas>
                 </div>
               </div>
             </div>
 
-            <!-- 4. Causal Mask -->
-            <h3 class="concept-title">4. Causal Attention Masking</h3>
-            <p>During training, the model processes all tokens simultaneously. To prevent a token from "cheating" by looking into the future, we apply a causal mask (\(M\)) to the upper triangle of the \(Q \times K^T\) attention matrix.</p>
-            <div class="widget-card">
-              <h4 style="color: var(--primary); margin-bottom: 0.5rem;">Interactive: Causal Attention Mask</h4>
-              <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Click the button below to force all future token attention scores to \(-\infty\).</p>
-              <button id="toggle-mask-btn" class="widget-btn">Apply Causal Mask (-∞)</button>
-              <div class="attention-grid" id="attn-grid">
-                <!-- JS will populate grid -->
+            <!-- 3. RMSNorm -->
+            <div id="arch-rmsnorm" style="margin-bottom: 3rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 class="concept-title">3. Root Mean Square Normalization (RMSNorm)</h3>
+                <button class="toggle-btn" onclick="this.nextElementSibling.classList.toggle('hidden');">Toggle Math</button>
+                <div class="math-block hidden">$$ 	ext{RMSNorm}(x) = rac{x}{\sqrt{rac{1}{d} \sum x_i^2 + \epsilon}} \odot \gamma $$</div>
+              </div>
+              <p>Unlike LayerNorm, RMSNorm doesn't center the mean to zero, it simply scales the vector by its Root Mean Square. Adjust the input variance below to see the bars normalize!</p>
+              <div class="widget-card">
+                <label>Input Variance Multiplier: <span id="rmsnorm-val">1.0</span></label>
+                <input type="range" id="rmsnorm-slider" min="0.1" max="5.0" step="0.1" value="1.0" style="width: 100%; margin: 1rem 0;">
+                <div id="rmsnorm-bars" class="bars-container" style="height: 150px; align-items: flex-end;"></div>
+                <p style="text-align: center; font-size: 0.8rem; margin-top: 1rem; color: var(--text-muted);">Normalized Output (always consistent scale)</p>
+              </div>
+            </div>
+
+            <!-- 4. Attention -->
+            <div id="arch-attention" style="margin-bottom: 3rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 class="concept-title">4. Causal Self-Attention</h3>
+                <button class="toggle-btn" onclick="this.nextElementSibling.classList.toggle('hidden');">Toggle Math</button>
+                <div class="math-block hidden">$$ 	ext{Attention}(Q, K, V) = 	ext{softmax}\left(rac{QK^T}{\sqrt{d_k}} + M
+ight)V $$</div>
+              </div>
+              <p>Words attend to previous words to build context. Future tokens are masked out (grayed out). Hover or click a token to see its attention fan!</p>
+              <div class="widget-card">
+                <div class="attention-grid" id="attn-viz-container" style="position: relative;">
+                  <svg id="attn-lines" class="attn-lines" preserveAspectRatio="none"></svg>
+                  <div class="attn-row" id="attn-row-q"></div>
+                  <div class="attn-row" id="attn-row-k"></div>
+                </div>
               </div>
             </div>
 
             <!-- 5. SwiGLU -->
-            <h3 class="concept-title">5. SwiGLU Activation Function</h3>
-            <p>After attention, the information is processed by a Feed-Forward Network utilizing a Swish-Gated Linear Unit (SwiGLU). It computes two separate linear projections, applies the SiLU activation \(x \cdot \sigma(x)\) to one, and multiplies them together:</p>
-            <div class="math-block">
-              $$
-              \text{SwiGLU}(x) = \text{SiLU}(x W_1^T) \odot (x W_3^T)
-              $$
-            </div>
-            <p>This element-wise gating mechanism acts as an information filter, selectively passing relevant features forward.</p>
-
-            <!-- 6. Sampling -->
-            <h3 class="concept-title">6. Top-K Sampling & Softmax</h3>
-            <p>At the very end, the model outputs raw logits for every word in the vocabulary. We apply Top-K filtering to eliminate unlikely hallucinated tokens, and then apply Temperature and Softmax to convert the logits into a valid probability distribution (summing to 1.0).</p>
-            <div class="widget-card">
-              <h4 style="color: var(--primary); margin-bottom: 0.5rem;">Interactive: Temperature & Top-K Sampling</h4>
-              <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Adjust <strong>Temperature</strong> to scale logits (low = greedy, high = creative). Adjust <strong>Top-K</strong> to completely filter out low-probability words.</p>
-              <div class="widget-controls">
-                <label for="widget-temp">Temperature (T = <span id="widget-temp-val">1.0</span>)</label>
-                <input type="range" id="widget-temp" min="0.1" max="3.0" step="0.1" value="1.0">
+            <div id="arch-swiglu" style="margin-bottom: 3rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 class="concept-title">5. SwiGLU FFN</h3>
+                <button class="toggle-btn" onclick="this.nextElementSibling.classList.toggle('hidden');">Toggle Math</button>
+                <div class="math-block hidden">$$ 	ext{SwiGLU}(x) = (x W_1 \cdot 	ext{SiLU}(x W_1)) \odot (x W_3) $$</div>
               </div>
-              <div class="widget-controls">
-                <label for="widget-topk">Top-K Filtering (K = <span id="widget-topk-val">4</span>)</label>
-                <input type="range" id="widget-topk" min="1" max="4" step="1" value="4">
-              </div>
-              <div class="bars-container" id="softmax-bars">
-                <!-- JS will populate these -->
+              <p>The Feed-Forward Network splits the input into two branches. One branch applies the non-linear SiLU activation to act as a "gate", controlling how much of the other branch's linear projection passes through via a Hadamard (element-wise) product.</p>
+              <div class="widget-card" style="text-align: center; padding: 2rem;">
+                <div style="display: flex; justify-content: center; gap: 4rem; align-items: center;">
+                  <div style="border: 1px solid var(--primary); padding: 1rem; border-radius: 8px;">Branch 1 (SiLU Gate)</div>
+                  <div style="font-size: 2rem;">⊗</div>
+                  <div style="border: 1px solid var(--primary); padding: 1rem; border-radius: 8px;">Branch 2 (Linear)</div>
+                </div>
               </div>
             </div>
 
-            <!-- 7. KV Caching -->
-            <h3 class="concept-title">7. KV Caching (Inference Optimization)</h3>
-            <p>During inference, generating the \(N^{\text{th}}\) token requires computing attention over all \(N-1\) previous tokens. To avoid recalculating the Keys and Values for previous tokens, we dynamically cache them in memory:</p>
-            <div class="math-block">
-              $$
-              K_{\text{cache}} = [K_0, K_1, \dots, K_{N-1}] \quad \text{and} \quad V_{\text{cache}} = [V_0, V_1, \dots, V_{N-1}]
-              $$
+            <!-- 6. Output Head -->
+            <div id="arch-head" style="margin-bottom: 3rem;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h3 class="concept-title">6. Output Head</h3>
+              </div>
+              <p>The final vector is projected back to the vocabulary size (1978 tokens). We apply Temperature scaling and Softmax to get a probability distribution, then sample the next token!</p>
             </div>
-            <p>When the new query \(Q_N\) is generated, it simply attends to the cached matrices, converting a highly expensive \(O(N^2)\) operation into a fast \(O(N)\) operation per generated token.</p>
             
+            <!-- Consolidated Equations -->
+            <details id="arch-equations" class="advanced-settings" style="margin-top: 4rem;">
+              <summary>Reference: Consolidated Mathematical Equations</summary>
+              <div class="math-block" style="margin-top: 1rem;">
+                $$ \text{FFN}(x) = \text{SwiGLU}(x)W_2 $$
+                $$ \text{Attention}(Q, K, V) = \text{softmax}\left(\frac{QK^T}{\sqrt{d_k}} + M\right)V $$
+              </div>
+            </details>
+          </div>
+        </section>
+
+        
+        <!-- Training Pipeline Section -->
+        <section id="training-section" class="content-section">
+          <header class="section-header">
+            <h2>Training <span class="highlight">Pipeline</span></h2>
+            <p>How the model learns from raw data.</p>
+          </header>
+
+          <div class="docs-content">
+            <div class="widget-card" style="margin-bottom: 2rem;">
+              <h3 style="color: var(--primary);">Data Flow</h3>
+              <p>The corpus is tokenized, chunked into sequences, and batched onto the GPU.</p>
+              <div style="display: flex; gap: 1rem; align-items: center; justify-content: center; margin-top: 1rem; flex-wrap: wrap;">
+                <div style="border: 1px solid var(--glass-border); padding: 1rem; border-radius: 8px;">corpus.txt</div>
+                <div>→</div>
+                <div style="border: 1px solid var(--glass-border); padding: 1rem; border-radius: 8px;">Dataset</div>
+                <div>→</div>
+                <div style="border: 1px solid var(--glass-border); padding: 1rem; border-radius: 8px;">DataLoader</div>
+                <div>→</div>
+                <div style="border: 1px solid var(--glass-border); padding: 1rem; border-radius: 8px; border-color: var(--primary);">GPU</div>
+              </div>
+            </div>
+
+            <div class="widget-card" style="margin-bottom: 2rem;">
+              <h3 style="color: var(--primary);">Training Loop Stepper</h3>
+              <p>Click next to step through a single training iteration.</p>
+              <div id="training-stepper" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px;">
+                <div class="train-step active" data-step="1">1. Forward Pass (Compute Logits)</div>
+                <div class="train-step" data-step="2">2. Reshape Logits & Targets</div>
+                <div class="train-step" data-step="3">3. Compute Cross-Entropy Loss</div>
+                <div class="train-step" data-step="4">4. Backward Pass (Compute Gradients)</div>
+                <div class="train-step" data-step="5">5. Optimizer Step (Update Weights)</div>
+                <div class="train-step" data-step="6">6. Zero Gradients</div>
+              </div>
+              <button id="train-step-btn" class="generate-btn" style="margin-top: 1rem; width: 100%;">Next Step</button>
+            </div>
+
+            <div class="settings-grid" style="margin-bottom: 2rem;">
+              <div class="widget-card">
+                <h4 style="color: var(--text-muted); margin-bottom: 0.5rem;">Hyperparameters</h4>
+                <ul style="list-style: none; padding: 0;">
+                  <li><strong>Optimizer:</strong> AdamW</li>
+                  <li><strong>Learning Rate:</strong> 3e-4</li>
+                  <li><strong>Batch Size:</strong> 64</li>
+                  <li><strong>Epochs:</strong> 10</li>
+                </ul>
+              </div>
+              <div class="widget-card">
+                <h4 style="color: var(--text-muted); margin-bottom: 0.5rem;">Loss Curve</h4>
+                <!-- Synthetic loss curve using a simple SVG -->
+                <svg viewBox="0 0 100 50" style="width: 100%; height: 80px; overflow: visible;">
+                  <polyline fill="none" stroke="var(--primary)" stroke-width="2" points="0,50 10,20 20,15 40,10 60,8 80,6 100,5" />
+                </svg>
+              </div>
+            </div>
           </div>
         </section>
 
         <!-- Implementation Details Section -->
         <section id="impl-section" class="content-section">
           <header class="section-header">
-            <h2>Technical <span class="highlight">Implementation</span></h2>
-            <p>Key components that make TinyLLM efficient and powerful.</p>
+            <h2>Source <span class="highlight">Reference</span></h2>
+            <p>Explore the actual codebase implementation.</p>
           </header>
 
           <div class="docs-content">
-            <div class="widget-card" style="margin-bottom: 2rem;">
-              <h3 style="color: var(--primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>
-                1. PyTorch Model Training
-              </h3>
-              <p style="margin-bottom: 1rem; color: var(--text-color);">The core language model is written entirely from scratch in Python using <strong>PyTorch</strong>. It defines custom modules for Rotary Embeddings, Multi-Head Attention, and SwiGLU FFNs. The model was trained locally on a custom text corpus to predict the next token using Cross-Entropy Loss.</p>
-            </div>
-
-            <div class="widget-card" style="margin-bottom: 2rem;">
-              <h3 style="color: var(--primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
-                2. Custom BPE Tokenizer
-              </h3>
-              <p style="margin-bottom: 1rem; color: var(--text-color);">We built a custom <strong>Byte-Pair Encoding (BPE)</strong> tokenizer that mimics the HuggingFace specifications. During training, a Python script compiles character merges based on corpus frequency. For the browser interface, we implemented a mirrored Javascript <code>BasicTokenizer</code> that parses the exported <code>tokenizer.json</code> to perform greedy longest-prefix tokenization identically in the client.</p>
-            </div>
-
-            <div class="widget-card" style="margin-bottom: 2rem;">
-              <h3 style="color: var(--primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
-                3. ONNX Export & Quantization
-              </h3>
-              <p style="margin-bottom: 1rem; color: var(--text-color);">To move the PyTorch model (`.pth`) to the web, we traced and exported the computation graph to the <strong>ONNX</strong> format. We then applied <strong>INT8 Dynamic Quantization</strong> to the Linear weights. This compressed the model from 6.2MB to just 2.3MB, significantly reducing bandwidth and memory requirements while preserving generation quality.</p>
-            </div>
-
-            <div class="widget-card" style="margin-bottom: 2rem;">
-              <h3 style="color: var(--primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
-                4. Client-Side WebAssembly (WASM) Inference
-              </h3>
-              <p style="margin-bottom: 1rem; color: var(--text-color);">The "Test Model" chat interface runs entirely in your browser without any backend servers. We use <strong>ONNX Runtime Web (ort)</strong>, which leverages WebAssembly (WASM) to execute the model's neural network operators at near-native speeds directly on your local CPU.</p>
+            <div class="widget-card">
+              <h3 style="color: var(--primary); margin-bottom: 1rem;">File Tree</h3>
+              <ul style="list-style: none; padding: 0; display: flex; flex-direction: column; gap: 1rem;">
+                <li style="border: 1px solid var(--glass-border); padding: 1rem; border-radius: 8px;">
+                  <strong style="color: #fff;">model.py</strong>
+                  <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.3rem;">Defines the PyTorch architecture (RoPE, RMSNorm, SwiGLU, Attention). <a href="#" onclick="document.querySelector('[data-target=\'math-section\']').click();">See Architecture</a></p>
+                </li>
+                <li style="border: 1px solid var(--glass-border); padding: 1rem; border-radius: 8px;">
+                  <strong style="color: #fff;">data.py</strong>
+                  <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.3rem;">Handles loading corpus.txt and batching. <a href="#" onclick="document.querySelector('[data-target=\'training-section\']').click();">See Training</a></p>
+                </li>
+                <li style="border: 1px solid var(--glass-border); padding: 1rem; border-radius: 8px;">
+                  <strong style="color: #fff;">tokenizer.py</strong>
+                  <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.3rem;">Builds the BPE tokenizer and exports tokenizer.json. <a href="#" onclick="document.querySelector('[data-target=\'tokenizer-section\']').click();">See Tokenizer</a></p>
+                </li>
+                <li style="border: 1px solid var(--glass-border); padding: 1rem; border-radius: 8px;">
+                  <strong style="color: #fff;">train.py</strong>
+                  <p style="font-size: 0.9rem; color: var(--text-muted); margin-top: 0.3rem;">The main training loop. <a href="#" onclick="document.querySelector('[data-target=\'training-section\']').click();">See Training</a></p>
+                </li>
+              </ul>
             </div>
           </div>
         </section>
+
 
         <!-- Mobile-only footer -->
         <div class="mobile-footer" style="padding: 2rem; display: none; justify-content: center;">
