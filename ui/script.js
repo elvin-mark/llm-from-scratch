@@ -69,161 +69,149 @@ class BasicTokenizer {
 }
 
 // UI Elements
-const outputArea = document.getElementById("output");
+const textDisplay = document.getElementById("text-display");
+const predictionsArea = document.getElementById("predictions-area");
+const tokenCandidates = document.getElementById("token-candidates");
 const promptInput = document.getElementById("prompt-input");
 const generateBtn = document.getElementById("generate-btn");
+const resetBtn = document.getElementById("reset-btn");
 const tempSlider = document.getElementById("temp-slider");
 const tempVal = document.getElementById("temp-val");
-const tokensSlider = document.getElementById("tokens-slider");
-const tokensVal = document.getElementById("tokens-val");
 
 // State
 let session = null;
 let tokenizer = null;
 let isGenerating = false;
+let currentInputIds = [];
 
 // Update labels
-tempSlider.addEventListener(
-  "input",
-  (e) => (tempVal.textContent = parseFloat(e.target.value).toFixed(1)),
-);
-tokensSlider.addEventListener(
-  "input",
-  (e) => (tokensVal.textContent = e.target.value),
-);
-
-function appendMessage(text, role) {
-  const div = document.createElement("div");
-  div.className = `message ${role}`;
-  div.textContent = text;
-  outputArea.appendChild(div);
-  outputArea.scrollTop = outputArea.scrollHeight;
-  return div;
-}
-
-// Utility: multinomial sampling
-function sampleFromLogits(logits, temperature) {
-  if (temperature <= 0.0) {
-    // Argmax
-    let maxIdx = 0;
-    let maxVal = logits[0];
-    for (let i = 1; i < logits.length; i++) {
-      if (logits[i] > maxVal) {
-        maxVal = logits[i];
-        maxIdx = i;
-      }
-    }
-    return maxIdx;
-  }
-
-  // Apply temperature
-  const scaledLogits = logits.map((v) => v / temperature);
-
-  // Softmax
-  const maxLogit = Math.max(...scaledLogits);
-  const exps = scaledLogits.map((v) => Math.exp(v - maxLogit));
-  const sumExps = exps.reduce((a, b) => a + b, 0);
-  const probs = exps.map((v) => v / sumExps);
-
-  // Sample
-  const r = Math.random();
-  let cumulative = 0.0;
-  for (let i = 0; i < probs.length; i++) {
-    cumulative += probs[i];
-    if (r <= cumulative) return i;
-  }
-  return probs.length - 1;
+if (tempSlider) {
+  tempSlider.addEventListener(
+    "input",
+    (e) => (tempVal.textContent = parseFloat(e.target.value).toFixed(1)),
+  );
 }
 
 async function initialize() {
   try {
-    // Load tokenizer
     const tResp = await fetch("../tokenizer.json");
     const tJson = await tResp.json();
     tokenizer = new BasicTokenizer(tJson);
 
-    // Load ONNX model
-    appendMessage("Loading ONNX Runtime and Model parameters...", "system");
+    textDisplay.innerHTML = '<span class="placeholder-text" style="color: var(--text-muted);">Loading ONNX Runtime and Model parameters...</span>';
 
-    // Ensure you provide the execution providers available in the browser
     session = await ort.InferenceSession.create("../tiny_llm_quantized.onnx", {
       executionProviders: ["wasm"],
     });
 
-    // Enable UI
-    document.querySelector(".message.system").textContent =
-      "✅ Model loaded! Ready for generation.";
+    textDisplay.innerHTML = '<span class="placeholder-text" style="color: var(--text-muted);">✅ Model loaded! Enter a prompt below to start.</span>';
     promptInput.disabled = false;
     generateBtn.disabled = false;
     promptInput.focus();
   } catch (err) {
     console.error(err);
-    appendMessage(`Error loading model: ${err.message}`, "system");
+    textDisplay.innerHTML = `<span style="color: red;">Error loading model: ${err.message}</span>`;
   }
 }
 
-async function generate() {
+async function startInteractive() {
   if (!promptInput.value.trim() || isGenerating || !session) return;
 
   const prompt = promptInput.value.trim();
-  promptInput.value = "";
-  isGenerating = true;
+  promptInput.disabled = true;
   generateBtn.disabled = true;
+  if(resetBtn) resetBtn.disabled = false;
+  
+  currentInputIds = tokenizer.encode(prompt);
+  textDisplay.textContent = prompt;
+  predictionsArea.style.display = 'block';
+  
+  await predictNextTokens();
+}
 
-  appendMessage(prompt, "user");
-  const modelMessageDiv = appendMessage("...", "model");
-
-  const temp = parseFloat(tempSlider.value);
-  const maxTokens = parseInt(tokensSlider.value);
-
-  let inputIds = tokenizer.encode(prompt);
+async function predictNextTokens() {
+  if (!session) return;
+  isGenerating = true;
+  
+  const temp = tempSlider ? parseFloat(tempSlider.value) : 0.8;
+  tokenCandidates.innerHTML = '<div style="color: var(--text-muted);">Computing next tokens...</div>';
 
   try {
-    for (let step = 0; step < maxTokens; step++) {
-      // ONNX Runtime requires BigInt64Array for 'long' types
-      const tensorInput = new ort.Tensor(
-        "int64",
-        BigInt64Array.from(inputIds.map(BigInt)),
-        [1, inputIds.length],
-      );
+    const tensorInput = new ort.Tensor(
+      "int64",
+      BigInt64Array.from(currentInputIds.map(BigInt)),
+      [1, currentInputIds.length],
+    );
 
-      // Run inference
-      const results = await session.run({ input_ids: tensorInput });
-      const logitsTensor = results.logits; // shape [1, seq_len, vocab_size]
+    const results = await session.run({ input_ids: tensorInput });
+    const logitsTensor = results.logits; 
+    const vocabSize = logitsTensor.dims[2];
+    const seqLen = logitsTensor.dims[1];
 
-      const vocabSize = logitsTensor.dims[2];
-      const seqLen = logitsTensor.dims[1];
+    const lastTokenOffset = (seqLen - 1) * vocabSize;
+    const lastTokenLogits = Array.from(
+      logitsTensor.data.slice(lastTokenOffset, lastTokenOffset + vocabSize),
+    );
 
-      // Extract the logits for the last token in the sequence
-      const lastTokenOffset = (seqLen - 1) * vocabSize;
-      const lastTokenLogits = Array.from(
-        logitsTensor.data.slice(lastTokenOffset, lastTokenOffset + vocabSize),
-      );
+    const scaledLogits = lastTokenLogits.map((v) => v / temp);
+    const maxLogit = Math.max(...scaledLogits);
+    const exps = scaledLogits.map((v) => Math.exp(v - maxLogit));
+    const sumExps = exps.reduce((a, b) => a + b, 0);
+    const probs = exps.map((v) => v / sumExps);
 
-      // Sample next token
-      const nextTokenId = sampleFromLogits(lastTokenLogits, temp);
-      inputIds.push(nextTokenId);
+    const indexedProbs = probs.map((p, idx) => ({ prob: p, id: idx }));
+    indexedProbs.sort((a, b) => b.prob - a.prob);
+    const top5 = indexedProbs.slice(0, 5);
 
-      // Decode and update UI live
-      const currentText = tokenizer.decode(inputIds);
-      modelMessageDiv.textContent = currentText;
-      outputArea.scrollTop = outputArea.scrollHeight;
-    }
+    tokenCandidates.innerHTML = '';
+    top5.forEach(item => {
+      const tokenStr = tokenizer.idToToken[item.id] || "[UNK]";
+      const displayStr = tokenStr.startsWith(" ") ? " " + tokenStr.substring(1) : tokenStr.replace(/Ġ/g, " ");
+      const probPercent = (item.prob * 100).toFixed(1);
+      
+      const btn = document.createElement('button');
+      btn.className = 'token-candidate-btn';
+      btn.innerHTML = `
+        <div class="token-candidate-bg" style="width: ${probPercent}%"></div>
+        <div class="token-candidate-text">${displayStr.replace(/</g, '&lt;')}</div>
+        <div class="token-candidate-prob">${probPercent}%</div>
+      `;
+      
+      btn.onclick = async () => {
+        currentInputIds.push(item.id);
+        textDisplay.textContent = tokenizer.decode(currentInputIds);
+        await predictNextTokens();
+      };
+      
+      tokenCandidates.appendChild(btn);
+    });
+
   } catch (err) {
     console.error(err);
-    modelMessageDiv.textContent += `\n[Error during generation: ${err.message}]`;
+    tokenCandidates.innerHTML = `<div style="color: red;">Error: ${err.message}</div>`;
   } finally {
     isGenerating = false;
-    generateBtn.disabled = false;
-    promptInput.focus();
   }
 }
 
 // Event Listeners
-generateBtn.addEventListener("click", generate);
-promptInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") generate();
-});
+if(generateBtn) generateBtn.addEventListener("click", startInteractive);
+if(promptInput) {
+  promptInput.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") startInteractive();
+  });
+}
+if(resetBtn) {
+  resetBtn.addEventListener('click', () => {
+    promptInput.disabled = false;
+    generateBtn.disabled = false;
+    resetBtn.disabled = true;
+    promptInput.value = "";
+    textDisplay.innerHTML = '<span class="placeholder-text" style="color: var(--text-muted);">✅ Model loaded! Enter a prompt below to start.</span>';
+    predictionsArea.style.display = 'none';
+    currentInputIds = [];
+  });
+}
 
 // Start initialization
 window.addEventListener("DOMContentLoaded", initialize);
