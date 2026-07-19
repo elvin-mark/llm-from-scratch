@@ -278,11 +278,6 @@ function drawAttentionLines(activeIdx) {
   if(!attnLinesContainer || !attnKeyWords) return;
   attnLinesContainer.innerHTML = '';
   
-  // Create SVG element
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.style.width = '100%';
-  svg.style.height = '100%';
-  
   const containerRect = attnLinesContainer.getBoundingClientRect();
   const qWord = attnQueryWords[activeIdx];
   const qRect = qWord.getBoundingClientRect();
@@ -318,10 +313,8 @@ function drawAttentionLines(activeIdx) {
     line.setAttribute('opacity', opacity);
     line.setAttribute('stroke-linecap', 'round');
     
-    svg.appendChild(line);
+    attnLinesContainer.appendChild(line);
   }
-  
-  attnLinesContainer.appendChild(svg);
 }
 
 if(attnQueryWords.length > 0) {
