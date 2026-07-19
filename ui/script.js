@@ -415,88 +415,63 @@ if (tokenizerInput && bpeVisualizer && tokenizerOutput) {
       });
       
       // Animate merges in bpeVisualizer
-      // 1. Break everything into characters
-      let currentSequence = text.split('');
-      // We will perform random-looking merges until we reach the targetSubwords
-      
-      let targetSequence = [...targetSubwords];
+      // 1. Break everything into characters tagged with their target token index
+      let currentSequence = [];
+      targetSubwords.forEach((targetStr, targetIdx) => {
+        let chars = targetStr.split('');
+        chars.forEach(c => {
+          currentSequence.push({ str: c, targetIdx: targetIdx });
+        });
+      });
       
       function renderSeq(seq, activeMergeIndex = -1) {
         bpeVisualizer.innerHTML = seq.map((s, i) => {
           const isActive = (i === activeMergeIndex || i === activeMergeIndex + 1);
           const bg = isActive ? 'rgba(99, 102, 241, 0.6)' : 'transparent';
           const border = isActive ? 'var(--primary)' : 'var(--glass-border)';
-          return `<span style="border:1px solid ${border}; background: ${bg}; padding:0.2rem 0.4rem; border-radius:4px; transition: all 0.2s;">${s.replace(/ /g, '␣')}</span>`;
+          return `<span style="border:1px solid ${border}; background: ${bg}; padding:0.2rem 0.4rem; border-radius:4px; transition: all 0.15s;">${s.str.replace(/ /g, '␣')}</span>`;
         }).join(' ');
       }
       
       renderSeq(currentSequence);
       
-      // 2. Generate a plan of merges
-      // We know targetSequence is the final grouping. We just need to merge adjacent items in currentSequence if they belong to the same target token.
-      let mergePlan = [];
-      let charIdx = 0;
-      for (let t = 0; t < targetSequence.length; t++) {
-        let tokenLen = targetSequence[t].length;
-        if (tokenLen > 1) {
-          // It requires merges. Since it's tokenLen characters, it requires tokenLen - 1 merges
-          for (let m = 0; m < tokenLen - 1; m++) {
-            mergePlan.push({ tokenIndex: t }); // Just keeping track, actual logic happens live
-          }
-        }
-      }
-      
-      let planSteps = 0;
-      
       animationInterval = setInterval(() => {
-        // Find first place where current sequence items can be merged to form the target
-        let merged = false;
-        
-        // Match currentSequence chunks with targetSequence
-        let currIdx = 0;
-        let targetIdx = 0;
-        
-        while (currIdx < currentSequence.length - 1 && targetIdx < targetSequence.length) {
-          let currStr = currentSequence[currIdx];
-          let targetStr = targetSequence[targetIdx];
-          
-          if (currStr !== targetStr) {
-            // This chunk is incomplete! Merge it with the next one.
-            let nextStr = currentSequence[currIdx + 1];
-            
-            // Highlight step
-            renderSeq(currentSequence, currIdx);
-            
-            setTimeout(() => {
-              // Perform merge
-              currentSequence.splice(currIdx, 2, currStr + nextStr);
-              renderSeq(currentSequence);
-              
-              if (currentSequence.length === targetSequence.length) {
-                // Done! Show final chips
-                clearInterval(animationInterval);
-                setTimeout(() => {
-                  finalChips.forEach(c => tokenizerOutput.appendChild(c));
-                }, 200);
-              }
-            }, 300);
-            
-            merged = true;
-            break;
-          } else {
-            currIdx++;
-            targetIdx++;
+        // Find all possible merges
+        let possibleMerges = [];
+        for (let i = 0; i < currentSequence.length - 1; i++) {
+          if (currentSequence[i].targetIdx === currentSequence[i+1].targetIdx) {
+            possibleMerges.push(i);
           }
         }
         
-        if (!merged) {
+        if (possibleMerges.length > 0) {
+          // Pick a random valid merge to simulate frequency-based BPE (not just left-to-right)
+          let mergeIdx = possibleMerges[Math.floor(Math.random() * possibleMerges.length)];
+          
+          // Highlight step
+          renderSeq(currentSequence, mergeIdx);
+          
+          setTimeout(() => {
+            // Perform merge
+            let mergedStr = currentSequence[mergeIdx].str + currentSequence[mergeIdx+1].str;
+            let targetIdx = currentSequence[mergeIdx].targetIdx;
+            currentSequence.splice(mergeIdx, 2, { str: mergedStr, targetIdx: targetIdx });
+            renderSeq(currentSequence);
+            
+            if (currentSequence.length === targetSubwords.length) {
+              clearInterval(animationInterval);
+              setTimeout(() => {
+                finalChips.forEach(c => tokenizerOutput.appendChild(c));
+              }, 150);
+            }
+          }, 150);
+          
+        } else {
           // Finished early or no merges needed
           clearInterval(animationInterval);
           finalChips.forEach(c => tokenizerOutput.appendChild(c));
         }
-        
-      }, 800);
-      
+      }, 350);
     }, 500);
   });
 }
