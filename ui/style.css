@@ -479,7 +479,7 @@ h1 {
 }
 
 /* Mobile Responsiveness */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   body {
     height: 100dvh;
     overflow-y: auto;
