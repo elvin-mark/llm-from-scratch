@@ -728,27 +728,6 @@ if (rmsSlider && rmsBarsIn && rmsBarsOut) {
   drawRMSBars(1.0);
 }
 
-// Training Stepper
-const trainStepBtn = document.getElementById('train-step-btn');
-const trainSteps = document.querySelectorAll('.train-step');
-let currentTrainStep = 1;
-
-if (trainStepBtn) {
-  trainStepBtn.addEventListener('click', () => {
-    trainSteps.forEach(s => s.classList.remove('active', 'done'));
-    
-    currentTrainStep++;
-    if(currentTrainStep > 6) currentTrainStep = 1;
-    
-    trainSteps.forEach((s, idx) => {
-      if (idx + 1 < currentTrainStep) {
-        s.classList.add('done');
-      } else if (idx + 1 === currentTrainStep) {
-        s.classList.add('active');
-      }
-    });
-  });
-}
 
 // SwiGLU Visualizer
 const swigluGateSlider = document.getElementById('swiglu-gate-slider');
@@ -791,4 +770,41 @@ if(swigluGateSlider) {
   swigluGateSlider.addEventListener('input', updateSwiGLU);
   swigluLinSlider.addEventListener('input', updateSwiGLU);
   updateSwiGLU();
+}
+
+// Training Stepper
+const trainBtn = document.getElementById('train-step-btn');
+const trainSteps = document.querySelectorAll('.train-step');
+const trainSnippet = document.getElementById('train-code-snippet');
+const trainDesc = document.getElementById('train-code-desc');
+
+const trainCodeMap = {
+  1: { code: "optimizer.zero_grad()", desc: "Clears old gradients from the previous step so they don't accumulate." },
+  2: { code: "logits = model(x)", desc: "Forward pass: passes the input batch (x) through the network to get unnormalized predictions (logits)." },
+  3: { code: "loss = criterion(logits.view(-1, vocab_size), y.view(-1))", desc: "Flattens the batch and sequence dimensions, then computes Cross-Entropy Loss against the targets (y)." },
+  4: { code: "loss.backward()", desc: "Backpropagation: computes the gradient of the loss with respect to every weight in the network." },
+  5: { code: "optimizer.step()", desc: "Updates the network weights using the computed gradients and the AdamW optimizer rules." }
+};
+
+if (trainBtn && trainSteps.length > 0) {
+  let currentTrainStep = 1;
+  // Remove existing listeners by cloning
+  const newTrainBtn = trainBtn.cloneNode(true);
+  trainBtn.parentNode.replaceChild(newTrainBtn, trainBtn);
+  
+  newTrainBtn.addEventListener('click', () => {
+    trainSteps.forEach(s => s.classList.remove('active'));
+    currentTrainStep++;
+    if(currentTrainStep > 5) currentTrainStep = 1;
+    
+    const activeEl = document.querySelector(`.train-step[data-step="${currentTrainStep}"]`);
+    if(activeEl) activeEl.classList.add('active');
+    
+    // Update code viewer
+    const data = trainCodeMap[currentTrainStep];
+    if (data && trainSnippet && trainDesc) {
+      trainSnippet.textContent = data.code;
+      trainDesc.textContent = data.desc;
+    }
+  });
 }

@@ -339,48 +339,94 @@
 
           <div class="docs-content">
             <div class="widget-card" style="margin-bottom: 2rem;">
-              <h3 style="color: var(--primary);">Data Flow</h3>
-              <p>The corpus is tokenized, chunked into sequences, and batched onto the GPU.</p>
-              <div style="display: flex; gap: 1rem; align-items: center; justify-content: center; margin-top: 1rem; flex-wrap: wrap;">
-                <div style="border: 1px solid var(--glass-border); padding: 1rem; border-radius: 8px;">corpus.txt</div>
-                <div>→</div>
-                <div style="border: 1px solid var(--glass-border); padding: 1rem; border-radius: 8px;">Dataset</div>
-                <div>→</div>
-                <div style="border: 1px solid var(--glass-border); padding: 1rem; border-radius: 8px;">DataLoader</div>
-                <div>→</div>
-                <div style="border: 1px solid var(--glass-border); padding: 1rem; border-radius: 8px; border-color: var(--primary);">GPU</div>
+              <h3 style="color: var(--primary); margin-bottom: 1rem;">Data Flow</h3>
+              <p style="color: var(--text-muted); margin-bottom: 1.5rem;">The corpus is tokenized, chunked into sequences, and batched onto the GPU.</p>
+              
+              <!-- Animated Data Flow Pipeline -->
+              <div class="data-flow-pipeline">
+                <div class="flow-node">
+                  <div class="flow-icon">📄</div>
+                  <span>corpus.txt</span>
+                </div>
+                <div class="flow-arrow">
+                  <div class="animated-dots"></div>
+                </div>
+                <div class="flow-node">
+                  <div class="flow-icon">🔠</div>
+                  <span>Tokenizer</span>
+                </div>
+                <div class="flow-arrow">
+                  <div class="animated-dots"></div>
+                </div>
+                <div class="flow-node">
+                  <div class="flow-icon">📦</div>
+                  <span>Batch (x,y)</span>
+                </div>
+                <div class="flow-arrow">
+                  <div class="animated-dots"></div>
+                </div>
+                <div class="flow-node highlight">
+                  <div class="flow-icon">⚡</div>
+                  <span>GPU VRAM</span>
+                </div>
               </div>
             </div>
 
             <div class="widget-card" style="margin-bottom: 2rem;">
-              <h3 style="color: var(--primary);">Training Loop Stepper</h3>
-              <p>Click next to step through a single training iteration.</p>
-              <div id="training-stepper" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.5rem; background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px;">
-                <div class="train-step active" data-step="1">1. Forward Pass (Compute Logits)</div>
-                <div class="train-step" data-step="2">2. Reshape Logits & Targets</div>
-                <div class="train-step" data-step="3">3. Compute Cross-Entropy Loss</div>
-                <div class="train-step" data-step="4">4. Backward Pass (Compute Gradients)</div>
-                <div class="train-step" data-step="5">5. Optimizer Step (Update Weights)</div>
-                <div class="train-step" data-step="6">6. Zero Gradients</div>
+              <h3 style="color: var(--primary);">The Autoregressive Training Loop</h3>
+              <p style="margin-bottom: 1.5rem; color: var(--text-muted);">Step through a single backpropagation iteration to see the exact PyTorch code executed.</p>
+              
+              <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+                <!-- Left: Stepper -->
+                <div id="training-stepper" style="flex: 1; min-width: 250px; display: flex; flex-direction: column; gap: 0.5rem;">
+                  <div class="train-step active" data-step="1">1. Zero Gradients</div>
+                  <div class="train-step" data-step="2">2. Forward Pass (Logits)</div>
+                  <div class="train-step" data-step="3">3. Reshape & Loss</div>
+                  <div class="train-step" data-step="4">4. Backward Pass (Grads)</div>
+                  <div class="train-step" data-step="5">5. Optimizer Step</div>
+                  
+                  <button id="train-step-btn" class="generate-btn" style="margin-top: 1rem; width: 100%;">Next Step</button>
+                </div>
+                
+                <!-- Right: Code Snippet Viewer -->
+                <div style="flex: 1.5; min-width: 300px; background: rgba(0,0,0,0.3); border-radius: 8px; border: 1px solid var(--glass-border); padding: 1.5rem; display: flex; align-items: center; justify-content: center; position: relative; min-height: 180px;">
+                  <pre id="train-code-snippet" style="font-family: monospace; font-size: 1.1rem; color: #a5b4fc; margin: 0; white-space: pre-wrap; text-align: left; width: 100%;">optimizer.zero_grad()</pre>
+                  <div id="train-code-desc" style="position: absolute; bottom: 1rem; left: 1.5rem; right: 1.5rem; font-size: 0.9rem; color: var(--text-muted);">Clears old gradients from the previous step so they don't accumulate.</div>
+                </div>
               </div>
-              <button id="train-step-btn" class="generate-btn" style="margin-top: 1rem; width: 100%;">Next Step</button>
             </div>
 
             <div class="settings-grid" style="margin-bottom: 2rem;">
               <div class="widget-card">
                 <h4 style="color: var(--text-muted); margin-bottom: 0.5rem;">Hyperparameters</h4>
-                <ul style="list-style: none; padding: 0;">
-                  <li><strong>Optimizer:</strong> AdamW</li>
-                  <li><strong>Learning Rate:</strong> 3e-4</li>
-                  <li><strong>Batch Size:</strong> 64</li>
-                  <li><strong>Epochs:</strong> 10</li>
-                </ul>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1rem;">
+                  <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px;">
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Optimizer</div>
+                    <div style="font-weight: bold; color: var(--primary);">AdamW</div>
+                  </div>
+                  <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px;">
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Learning Rate</div>
+                    <div style="font-weight: bold; color: var(--primary);">3e-4</div>
+                  </div>
+                  <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px;">
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Batch Size</div>
+                    <div style="font-weight: bold; color: var(--primary);">64</div>
+                  </div>
+                  <div style="background: rgba(0,0,0,0.2); padding: 1rem; border-radius: 8px;">
+                    <div style="font-size: 0.8rem; color: var(--text-muted);">Epochs</div>
+                    <div style="font-weight: bold; color: var(--primary);">10</div>
+                  </div>
+                </div>
               </div>
               <div class="widget-card">
-                <h4 style="color: var(--text-muted); margin-bottom: 0.5rem;">Loss Curve</h4>
-                <!-- Synthetic loss curve using a simple SVG -->
-                <svg viewBox="0 0 100 50" style="width: 100%; height: 80px; overflow: visible;">
-                  <polyline fill="none" stroke="var(--primary)" stroke-width="2" points="0,50 10,20 20,15 40,10 60,8 80,6 100,5" />
+                <h4 style="color: var(--text-muted); margin-bottom: 0.5rem;">Loss Curve (Convergence)</h4>
+                <svg viewBox="0 0 100 50" style="width: 100%; height: 120px; overflow: visible; margin-top: 1rem;">
+                  <!-- Grid lines -->
+                  <line x1="0" y1="10" x2="100" y2="10" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                  <line x1="0" y1="25" x2="100" y2="25" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                  <line x1="0" y1="40" x2="100" y2="40" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                  <!-- Animated loss line -->
+                  <polyline fill="none" stroke="var(--primary)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="0,48 10,25 20,18 40,12 60,8 80,6 100,5" style="stroke-dasharray: 150; stroke-dashoffset: 150; animation: drawLoss 3s ease-out infinite alternate;" />
                 </svg>
               </div>
             </div>
