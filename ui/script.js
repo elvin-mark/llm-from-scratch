@@ -55,13 +55,12 @@ class BasicTokenizer {
       let token = this.idToToken[ids[i]];
       if (!token || token === "[CLS]" || token === "[PAD]") continue;
 
-      // Handle HuggingFace style byte-level BPE spaces 'Ġ' or ' '
-      if (token.startsWith(" ")) {
-        text += " " + token.substring(1);
-      } else if (token.startsWith("Ġ")) {
+      // Handle HuggingFace style byte-level BPE spaces 'Ġ'
+      if (token.startsWith("Ġ")) {
         text += " " + token.substring(1);
       } else {
-        text += token;
+        // Add spaces between all tokens for visibility in this educational UI
+        text += (text.length > 0 ? " " : "") + token;
       }
     }
     return text.trim();
