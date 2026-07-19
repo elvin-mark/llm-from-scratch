@@ -168,9 +168,9 @@
             <div id="arch-embedding" style="margin-bottom: 3rem;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <h3 class="concept-title">1. Token Embedding</h3>
-                <button class="toggle-btn" onclick="this.nextElementSibling.classList.toggle('hidden');">Toggle Math</button>
-                <div class="math-block hidden">$$ E \in \mathbb{R}^{V 	imes d} $$</div>
+                <button class="toggle-btn" onclick="this.parentElement.nextElementSibling.classList.toggle('hidden');">Toggle Math</button>
               </div>
+              <div class="math-block hidden">$$ E \in \mathbb{R}^{V 	imes d} $$</div>
               <p>Each token ID acts as an index to look up a dense continuous vector from the embedding matrix. This vector represents the semantic meaning of the token.</p>
               <div class="widget-card" style="text-align: center;">
                 <p style="font-family: monospace; color: var(--primary);">Token ID: 42 → [0.12, -0.45, 0.88, ..., 0.03]</p>
@@ -181,9 +181,9 @@
             <div id="arch-rope" style="margin-bottom: 3rem;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <h3 class="concept-title">2. Rotary Positional Embedding (RoPE)</h3>
-                <button class="toggle-btn" onclick="this.nextElementSibling.classList.toggle('hidden');">Toggle Math</button>
-                <div class="math-block hidden">$$ R_{\Theta,m}x = (x_1 \cos m	heta_1 - x_2 \sin m	heta_1, x_1 \sin m	heta_1 + x_2 \cos m	heta_1, ...) $$</div>
+                <button class="toggle-btn" onclick="this.parentElement.nextElementSibling.classList.toggle('hidden');">Toggle Math</button>
               </div>
+              <div class="math-block hidden">$$ R_{\Theta,m}x = (x_1 \cos m	heta_1 - x_2 \sin m	heta_1, x_1 \sin m	heta_1 + x_2 \cos m	heta_1, ...) $$</div>
               <p>RoPE injects positional information by rotating the Query and Key vectors in a 2D plane based on their position in the sequence.</p>
               <div class="widget-card">
                 <label>Position (m): <span id="rope-pos-val">0</span></label>
@@ -198,9 +198,9 @@
             <div id="arch-rmsnorm" style="margin-bottom: 3rem;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <h3 class="concept-title">3. Root Mean Square Normalization (RMSNorm)</h3>
-                <button class="toggle-btn" onclick="this.nextElementSibling.classList.toggle('hidden');">Toggle Math</button>
-                <div class="math-block hidden">$$ 	ext{RMSNorm}(x) = rac{x}{\sqrt{rac{1}{d} \sum x_i^2 + \epsilon}} \odot \gamma $$</div>
+                <button class="toggle-btn" onclick="this.parentElement.nextElementSibling.classList.toggle('hidden');">Toggle Math</button>
               </div>
+              <div class="math-block hidden">$$ 	ext{RMSNorm}(x) = rac{x}{\sqrt{rac{1}{d} \sum x_i^2 + \epsilon}} \odot \gamma $$</div>
               <p>Unlike LayerNorm, RMSNorm doesn't center the mean to zero, it simply scales the vector by its Root Mean Square. Adjust the input variance below to see the bars normalize!</p>
               <div class="widget-card">
                 <label>Input Variance Multiplier: <span id="rmsnorm-val">1.0</span></label>
@@ -214,10 +214,10 @@
             <div id="arch-attention" style="margin-bottom: 3rem;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <h3 class="concept-title">4. Causal Self-Attention</h3>
-                <button class="toggle-btn" onclick="this.nextElementSibling.classList.toggle('hidden');">Toggle Math</button>
-                <div class="math-block hidden">$$ 	ext{Attention}(Q, K, V) = 	ext{softmax}\left(rac{QK^T}{\sqrt{d_k}} + M
-ight)V $$</div>
+                <button class="toggle-btn" onclick="this.parentElement.nextElementSibling.classList.toggle('hidden');">Toggle Math</button>
               </div>
+              <div class="math-block hidden">$$ 	ext{Attention}(Q, K, V) = 	ext{softmax}\left(rac{QK^T}{\sqrt{d_k}} + M
+ight)V $$</div>
               <p>Words attend to previous words to build context. Future tokens are masked out (grayed out). Hover or click a token to see its attention fan!</p>
               <div class="widget-card">
                 <div class="attention-grid" id="attn-viz-container" style="position: relative;">
@@ -236,9 +236,9 @@ ight)V $$</div>
             <div id="arch-swiglu" style="margin-bottom: 3rem;">
               <div style="display: flex; justify-content: space-between; align-items: center;">
                 <h3 class="concept-title">5. SwiGLU FFN</h3>
-                <button class="toggle-btn" onclick="this.nextElementSibling.classList.toggle('hidden');">Toggle Math</button>
-                <div class="math-block hidden">$$ 	ext{SwiGLU}(x) = (x W_1 \cdot 	ext{SiLU}(x W_1)) \odot (x W_3) $$</div>
+                <button class="toggle-btn" onclick="this.parentElement.nextElementSibling.classList.toggle('hidden');">Toggle Math</button>
               </div>
+              <div class="math-block hidden">$$ 	ext{SwiGLU}(x) = (x W_1 \cdot 	ext{SiLU}(x W_1)) \odot (x W_3) $$</div>
               <p>The Feed-Forward Network splits the input into two branches. One branch applies the non-linear SiLU activation to act as a "gate", controlling how much of the other branch's linear projection passes through via a Hadamard (element-wise) product.</p>
               <div class="widget-card" style="text-align: center; padding: 2rem;">
                 <div style="display: flex; justify-content: center; gap: 4rem; align-items: center;">
