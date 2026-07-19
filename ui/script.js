@@ -244,3 +244,103 @@ navItems.forEach(item => {
     document.getElementById(targetId).classList.add('active');
   });
 });
+
+// --- Interactive Widgets Logic ---
+
+// 1. Softmax Temperature Widget
+const widgetTemp = document.getElementById('widget-temp');
+const widgetTempVal = document.getElementById('widget-temp-val');
+const softmaxBars = document.getElementById('softmax-bars');
+
+// Simulated raw logit outputs from a model
+const rawLogits = [
+  { word: "apple", logit: 2.5 },
+  { word: "banana", logit: 1.2 },
+  { word: "cat", logit: 0.1 },
+  { word: "dog", logit: -1.5 }
+];
+
+function updateSoftmaxWidget() {
+  const T = parseFloat(widgetTemp.value);
+  widgetTempVal.textContent = T.toFixed(1);
+  
+  // Apply Temperature
+  const scaledLogits = rawLogits.map(item => item.logit / T);
+  
+  // Softmax
+  const maxLogit = Math.max(...scaledLogits);
+  const exps = scaledLogits.map(v => Math.exp(v - maxLogit));
+  const sumExps = exps.reduce((a, b) => a + b, 0);
+  const probs = exps.map(v => v / sumExps);
+  
+  // Update UI
+  softmaxBars.innerHTML = '';
+  rawLogits.forEach((item, i) => {
+    const probPercent = (probs[i] * 100).toFixed(1);
+    
+    const row = document.createElement('div');
+    row.className = 'bar-row';
+    
+    row.innerHTML = `
+      <div class="bar-label">${item.word}</div>
+      <div class="bar-track">
+        <div class="bar-fill" style="width: ${probPercent}%"></div>
+      </div>
+      <div class="bar-value">${probPercent}%</div>
+    `;
+    softmaxBars.appendChild(row);
+  });
+}
+
+if(widgetTemp) {
+  widgetTemp.addEventListener('input', updateSoftmaxWidget);
+  updateSoftmaxWidget(); // init
+}
+
+// 2. Causal Attention Mask Widget
+const maskBtn = document.getElementById('toggle-mask-btn');
+const attnGrid = document.getElementById('attn-grid');
+let isMasked = false;
+
+function initAttnGrid() {
+  if(!attnGrid) return;
+  attnGrid.innerHTML = '';
+  for(let r=0; r<4; r++) {
+    for(let c=0; c<4; c++) {
+      const cell = document.createElement('div');
+      cell.className = 'attn-cell';
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+      // Random attention score between 0.10 and 0.60
+      cell.textContent = (Math.random() * 0.5 + 0.1).toFixed(2);
+      attnGrid.appendChild(cell);
+    }
+  }
+}
+
+function toggleMask() {
+  isMasked = !isMasked;
+  maskBtn.textContent = isMasked ? "Remove Causal Mask" : "Apply Causal Mask (-∞)";
+  const cells = attnGrid.querySelectorAll('.attn-cell');
+  
+  cells.forEach(cell => {
+    const r = parseInt(cell.dataset.r);
+    const c = parseInt(cell.dataset.c);
+    
+    // Upper triangle (future tokens)
+    if(c > r) {
+      if(isMasked) {
+        cell.classList.add('masked');
+        cell.textContent = '-∞';
+      } else {
+        cell.classList.remove('masked');
+        cell.textContent = (Math.random() * 0.5 + 0.1).toFixed(2);
+      }
+    }
+  });
+}
+
+if(maskBtn) {
+  initAttnGrid();
+  maskBtn.addEventListener('click', toggleMask);
+}

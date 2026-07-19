@@ -94,6 +94,31 @@
               $$
             </div>
             <p>This formulation ensures stability during deep training and allows for zero-allocation inference during production.</p>
+
+            <div class="interactive-widgets">
+              <!-- Widget 1: Temperature & Softmax -->
+              <div class="widget-card">
+                <h3>Interactive: Softmax & Temperature</h3>
+                <p>See how temperature scales raw logits before converting them to probabilities. A low temperature makes the model confident (greedy), while a high temperature makes the distribution uniform (creative).</p>
+                <div class="widget-controls">
+                  <label for="widget-temp">Temperature (T = <span id="widget-temp-val">1.0</span>)</label>
+                  <input type="range" id="widget-temp" min="0.1" max="3.0" step="0.1" value="1.0">
+                </div>
+                <div class="bars-container" id="softmax-bars">
+                  <!-- JS will populate these -->
+                </div>
+              </div>
+
+              <!-- Widget 2: Causal Attention Masking -->
+              <div class="widget-card">
+                <h3>Interactive: Causal Attention Mask</h3>
+                <p>During training, the model processes all tokens simultaneously. To prevent a token from "cheating" by looking into the future, we apply a causal mask (M) to the upper triangle of the attention matrix.</p>
+                <button id="toggle-mask-btn" class="widget-btn">Apply Causal Mask (-∞)</button>
+                <div class="attention-grid" id="attn-grid">
+                  <!-- JS will populate grid -->
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
