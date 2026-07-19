@@ -716,3 +716,46 @@ if (trainStepBtn) {
     });
   });
 }
+
+// SwiGLU Visualizer
+const swigluGateSlider = document.getElementById('swiglu-gate-slider');
+const swigluLinSlider = document.getElementById('swiglu-lin-slider');
+const swigluGateVal = document.getElementById('swiglu-gate-val');
+const swigluLinVal = document.getElementById('swiglu-lin-val');
+
+const swigluSiluNode = document.getElementById('swiglu-silu-node');
+const swigluLinNode = document.getElementById('swiglu-lin-node');
+const swigluOutNode = document.getElementById('swiglu-out-node');
+
+function updateSwiGLU() {
+  if (!swigluGateSlider) return;
+  const gateIn = parseFloat(swigluGateSlider.value);
+  const linIn = parseFloat(swigluLinSlider.value);
+  
+  swigluGateVal.textContent = gateIn.toFixed(1);
+  swigluLinVal.textContent = linIn.toFixed(1);
+  
+  // SiLU = x * sigmoid(x)
+  const sigmoid = 1 / (1 + Math.exp(-gateIn));
+  const siluOut = gateIn * sigmoid;
+  
+  const finalOut = siluOut * linIn;
+  
+  swigluSiluNode.textContent = siluOut.toFixed(2);
+  swigluLinNode.textContent = linIn.toFixed(1);
+  swigluOutNode.textContent = finalOut.toFixed(2);
+  
+  // Visual feedback: opacity based on gate activation
+  const gateOpacity = Math.min(1, Math.max(0.1, (siluOut + 0.5) / 2)); 
+  swigluSiluNode.style.opacity = gateOpacity;
+  
+  // Output brightness based on absolute magnitude
+  const outOpacity = Math.min(1, Math.max(0.1, Math.abs(finalOut)/15));
+  swigluOutNode.style.opacity = outOpacity;
+}
+
+if(swigluGateSlider) {
+  swigluGateSlider.addEventListener('input', updateSwiGLU);
+  swigluLinSlider.addEventListener('input', updateSwiGLU);
+  updateSwiGLU();
+}

@@ -251,12 +251,54 @@
               </div>
               <div class="math-block hidden">$$ \text{SwiGLU}(x) = (x W_1 \cdot \text{SiLU}(x W_1)) \odot (x W_3) $$</div>
               <p>The Feed-Forward Network splits the input into two branches. One branch applies the non-linear SiLU activation to act as a "gate", controlling how much of the other branch's linear projection passes through via a Hadamard (element-wise) product.</p>
-              <div class="widget-card" style="text-align: center; padding: 2rem;">
-                <div style="display: flex; justify-content: center; gap: 4rem; align-items: center;">
-                  <div style="border: 1px solid var(--primary); padding: 1rem; border-radius: 8px;">Branch 1 (SiLU Gate)</div>
-                  <div style="font-size: 2rem;">⊗</div>
-                  <div style="border: 1px solid var(--primary); padding: 1rem; border-radius: 8px;">Branch 2 (Linear)</div>
+              <div class="widget-card" style="padding: 2rem;">
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 2rem;">
+                  <!-- Inputs -->
+                  <div style="display: flex; justify-content: space-around; width: 100%; max-width: 500px;">
+                    <div style="text-align: center;">
+                      <label>Gate Input (xW₁): <span id="swiglu-gate-val" style="color: var(--primary); font-family: monospace;">0.0</span></label><br>
+                      <input type="range" id="swiglu-gate-slider" min="-5" max="5" step="0.1" value="0" style="width: 150px; margin-top: 1rem;">
+                    </div>
+                    <div style="text-align: center;">
+                      <label>Linear Input (xW₃): <span id="swiglu-lin-val" style="color: #10b981; font-family: monospace;">10.0</span></label><br>
+                      <input type="range" id="swiglu-lin-slider" min="-10" max="10" step="0.5" value="10" style="width: 150px; margin-top: 1rem;">
+                    </div>
+                  </div>
+                  
+                  <!-- Nodes -->
+                  <div style="display: flex; justify-content: center; align-items: center; gap: 2rem; width: 100%;">
+                    
+                    <!-- Gate Branch -->
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; width: 120px;">
+                      <div style="font-size: 0.8rem; color: var(--text-muted);">SiLU(Gate)</div>
+                      <div id="swiglu-silu-node" style="border: 2px solid var(--primary); padding: 1rem; border-radius: 50%; width: 70px; height: 70px; display: flex; justify-content: center; align-items: center; background: rgba(99, 102, 241, 0.2); transition: all 0.2s; font-family: monospace;">
+                        0.00
+                      </div>
+                    </div>
+                    
+                    <!-- Multiplier -->
+                    <div style="font-size: 2rem; color: var(--text-muted);">⊗</div>
+                    
+                    <!-- Linear Branch -->
+                    <div style="display: flex; flex-direction: column; align-items: center; gap: 0.5rem; width: 120px;">
+                      <div style="font-size: 0.8rem; color: var(--text-muted);">Linear</div>
+                      <div id="swiglu-lin-node" style="border: 2px solid #10b981; padding: 1rem; border-radius: 8px; width: 70px; height: 70px; display: flex; justify-content: center; align-items: center; background: rgba(16, 185, 129, 0.2); font-family: monospace;">
+                        10.0
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div style="font-size: 1.5rem; color: var(--text-muted);">↓</div>
+                  
+                  <!-- Output -->
+                  <div style="text-align: center;">
+                    <div style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">Output</div>
+                    <div id="swiglu-out-node" style="border: 2px solid #8b5cf6; padding: 1rem 2rem; border-radius: 8px; font-size: 1.5rem; font-weight: bold; background: rgba(139, 92, 246, 0.2); transition: all 0.2s; font-family: monospace; min-width: 120px;">
+                      0.00
+                    </div>
+                  </div>
                 </div>
+              </div>
               </div>
             </div>
 
