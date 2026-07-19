@@ -983,6 +983,17 @@ h1 {
 }
 .flow-icon {
   font-size: 1.8rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.flow-icon svg {
+  width: 32px;
+  height: 32px;
+  stroke: var(--primary);
+}
+.flow-node.highlight .flow-icon svg {
+  stroke: #fff;
 }
 .flow-arrow {
   flex-grow: 1;
