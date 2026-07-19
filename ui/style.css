@@ -628,9 +628,15 @@ h1 {
 }
 
 /* Mobile Responsiveness */
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
+  body {
+    height: 100dvh;
+    overflow-y: auto;
+  }
+
   .app-layout {
     flex-direction: column;
+    height: auto;
   }
   
   .sidebar {
@@ -639,6 +645,10 @@ h1 {
     border-bottom: 1px solid var(--glass-border);
     padding: 1rem 0;
     align-items: center;
+    flex-shrink: 0;
+    z-index: 20;
+    position: sticky;
+    top: 0;
   }
   
   .logo-container {
