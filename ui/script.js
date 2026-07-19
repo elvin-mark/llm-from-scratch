@@ -227,3 +227,20 @@ promptInput.addEventListener("keydown", (e) => {
 
 // Start initialization
 window.addEventListener("DOMContentLoaded", initialize);
+
+// Navigation UI Logic
+const navItems = document.querySelectorAll('.nav-item');
+const contentSections = document.querySelectorAll('.content-section');
+
+navItems.forEach(item => {
+  item.addEventListener('click', () => {
+    // Remove active class from all nav items and sections
+    navItems.forEach(nav => nav.classList.remove('active'));
+    contentSections.forEach(section => section.classList.remove('active'));
+    
+    // Add active class to clicked item and corresponding section
+    item.classList.add('active');
+    const targetId = item.getAttribute('data-target');
+    document.getElementById(targetId).classList.add('active');
+  });
+});
