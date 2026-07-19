@@ -279,6 +279,9 @@ function drawAttentionLines(activeIdx) {
   attnLinesContainer.innerHTML = '';
   
   const containerRect = attnLinesContainer.getBoundingClientRect();
+  // CRITICAL: Set SVG viewBox so the coordinate system matches the physical pixel dimensions
+  attnLinesContainer.setAttribute('viewBox', `0 0 ${containerRect.width} ${containerRect.height}`);
+  
   const qWord = attnQueryWords[activeIdx];
   const qRect = qWord.getBoundingClientRect();
   
@@ -292,8 +295,19 @@ function drawAttentionLines(activeIdx) {
   weights = weights.map(w => w / sumWeights);
 
   const kChildren = attnKeyWords.children;
-  for(let i=0; i<=activeIdx; i++) {
+  for(let i = 0; i < kChildren.length; i++) {
     const kWord = kChildren[i];
+    
+    // Masking future tokens
+    if (i > activeIdx) {
+      kWord.style.opacity = '0.3';
+      kWord.style.filter = 'grayscale(100%)';
+      continue; // Do not draw line
+    } else {
+      kWord.style.opacity = '1';
+      kWord.style.filter = 'none';
+    }
+    
     const kRect = kWord.getBoundingClientRect();
     const endX = kRect.left - containerRect.left + (kRect.width / 2);
     const endY = kRect.bottom - containerRect.top + 5; // bottom of key word
