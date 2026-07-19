@@ -249,7 +249,7 @@
                 <h3 class="concept-title">5. SwiGLU FFN</h3>
                 <button class="toggle-btn" onclick="this.parentElement.nextElementSibling.classList.toggle('hidden');">Toggle Math</button>
               </div>
-              <div class="math-block hidden">$$ \text{SwiGLU}(x) = (x W_1 \cdot \text{SiLU}(x W_1)) \odot (x W_3) $$</div>
+              <div class="math-block hidden">$$ \text{SwiGLU}(x) = \text{SiLU}(x W_1) \odot (x W_3) $$</div>
               <p>The Feed-Forward Network splits the input into two branches. One branch applies the non-linear SiLU activation to act as a "gate", controlling how much of the other branch's linear projection passes through via a Hadamard (element-wise) product.</p>
               <div class="widget-card" style="padding: 2rem;">
                 <div style="display: flex; flex-direction: column; align-items: center; gap: 2rem;">
