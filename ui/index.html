@@ -380,7 +380,7 @@
                 </div>
                 <div class="flow-node highlight">
                   <div class="flow-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 12 12 17 22 12"></polyline><polyline points="2 17 12 22 22 17"></polyline></svg>
                   </div>
                   <span>Model</span>
                 </div>
@@ -440,8 +440,8 @@
                   <line x1="0" y1="10" x2="100" y2="10" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
                   <line x1="0" y1="25" x2="100" y2="25" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
                   <line x1="0" y1="40" x2="100" y2="40" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
-                  <!-- Animated loss line -->
-                  <polyline fill="none" stroke="var(--primary)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="0,48 10,25 20,18 40,12 60,8 80,6 100,5" style="stroke-dasharray: 150; stroke-dashoffset: 150; animation: drawLoss 3s ease-out infinite alternate;" />
+                  <!-- Animated loss line (starts high at y=5, drops to y=45) -->
+                  <polyline fill="none" stroke="var(--primary)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="0,5 10,25 20,32 40,38 60,42 80,44 100,45" style="stroke-dasharray: 150; stroke-dashoffset: 150; animation: drawLoss 3s ease-out infinite alternate;" />
                 </svg>
               </div>
             </div>
