@@ -9,8 +9,9 @@ This repository contains all the building blocks to train and generate text from
 - **Rotary Position Embeddings (RoPE)**: Implements complex frequency-based relative positional embeddings for query/key tensors.
 - **RMSNorm**: Root Mean Square Layer Normalization used before attention and feed-forward blocks.
 - **SwiGLU Activation**: Feed-forward networks using Swish-Gated Linear Units (SiLU-gated linear projections) instead of standard ReLU/GELU.
-- **Custom BPE Tokenizer**: Helper scripts to train a Byte-Pair Encoding (BPE) tokenizer using the Hugging Face `tokenizers` library.
+- **Custom BPE Tokenizer**: Helper scripts to train a Byte-Pair Encoding (BPE) tokenizer using the Hugging Face `tokenizers` library, or an educational from-scratch pure Python BPE implementation.
 - **Top-K & Temperature Sampling**: Autoregressive text generation with customizable temperature scaling and top-k filtering.
+- **Standalone C & CUDA Inference**: Highly optimized, zero-allocation standalone inference engines written in C and CUDA, supporting OpenBLAS and Int8 Quantization.
 
 ---
 
@@ -22,8 +23,10 @@ This repository contains all the building blocks to train and generate text from
 - [generate.py](generate.py): Autoregressive text generator with Top-K and temperature scaling.
 - [interpretability.py](interpretability.py): Streamlit dashboard for mechanistic interpretability.
 - [export_onnx.py](export_onnx.py): Script to export PyTorch weights into optimized ONNX/Int8 formats.
+- [tokenizer.py](tokenizer.py): Educational, from-scratch pure Python implementation of a BPE tokenizer.
+- [c/](c/): Standalone inference engine implementations in pure C, OpenBLAS, CUDA, and Quantized Int8.
 - [ui/](ui/): Frontend browser application utilizing ONNX Runtime Web.
-- [docs/](docs/): Extensive documentation detailing the LLaMA-based architecture and training flow.
+- [docs/](docs/): Extensive documentation detailing the LLaMA-based architecture, tokenization, and training flow.
 
 ---
 
@@ -33,6 +36,8 @@ If you are interested in exactly how the mathematics and auto-regressive flows o
 
 - [Architecture Breakdown](docs/architecture.md): Deep dive into Pre-RMSNorm, RoPE, and SwiGLU FFNs.
 - [Training Pipeline](docs/training.md): Overview of dataset ingestion, hyperparameter choices, and the CrossEntropy backward pass loop.
+- [Tokenizer Architecture](docs/tokenizer.md): Explanation of the Byte-Pair Encoding (BPE) training and inference algorithms.
+- [C Inference Architecture](c/ARCH.md): Explanation of the memory-mapped C inference engines and dynamic Int8 quantization.
 
 ---
 
@@ -61,6 +66,8 @@ uv run python data.py ./kor_sentences.tsv
 ```
 This produces `corpus.txt` and `tokenizer.json`.
 
+*(Optional: You can train the tokenizer using our educational pure-Python BPE algorithm from scratch by appending `--scratch-tokenizer`)*
+
 ### 3. Train the Model
 
 To train the `TinyLLM` model on the generated corpus:
@@ -76,6 +83,40 @@ Once trained, generate sentences autoregressively:
 uv run python generate.py
 ```
 
+*(Optional: Generate text using the pure-Python educational tokenizer by appending `--scratch-tokenizer`)*
+
+---
+
+## Standalone Native Inference (C & CUDA)
+
+You can run the model entirely standalone without Python or PyTorch using our memory-mapped native inference engines located in the `c/` directory.
+
+1. **Export the Weights**:
+   ```bash
+   cd c
+   uv run python export.py
+   ```
+2. **Compile and Run**:
+   Choose your hardware target:
+   ```bash
+   # Standard CPU (Naive Loops)
+   make run
+   
+   # CPU with OpenBLAS Acceleration
+   make run USE_BLAS=1
+   
+   # GPU with Custom CUDA Kernels
+   make run_cu
+   ```
+
+3. **Int8 Dynamic Quantization**:
+   For severe memory footprint reduction, export the model using row-wise Int8 quantization and run the dynamic quantizer:
+   ```bash
+   uv run python export_q8.py
+   make runq
+   ./runq
+   ```
+   
 ---
 
 ## Serverless Web UI Inference (ONNX)
