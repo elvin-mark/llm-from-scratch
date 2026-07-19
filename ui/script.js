@@ -670,13 +670,46 @@ if (rmsSlider && rmsBarsIn && rmsBarsOut) {
     
     function drawRow(container, vals, scaleFactor) {
       vals.forEach(v => {
-        const h = Math.min(120, Math.abs(v) * scaleFactor); // max height ~120px
+        const row = document.createElement('div');
+        row.style.display = 'flex';
+        row.style.alignItems = 'center';
+        row.style.width = '100%';
+        row.style.height = '14px';
+        row.style.marginBottom = '4px';
+
+        const leftSpace = document.createElement('div');
+        leftSpace.style.flex = '1';
+        leftSpace.style.display = 'flex';
+        leftSpace.style.justifyContent = 'flex-end';
+
+        const rightSpace = document.createElement('div');
+        rightSpace.style.flex = '1';
+        rightSpace.style.display = 'flex';
+        rightSpace.style.justifyContent = 'flex-start';
+
         const bar = document.createElement('div');
-        bar.style.width = '20px';
-        bar.style.height = `${h}px`;
+        const w = Math.min(100, Math.abs(v) * scaleFactor);
+        bar.style.width = `${w}px`;
+        bar.style.height = '100%';
         bar.style.background = v > 0 ? 'var(--primary)' : '#f43f5e';
-        bar.style.borderRadius = '4px 4px 0 0';
-        container.appendChild(bar);
+        bar.style.borderRadius = v > 0 ? '0 4px 4px 0' : '4px 0 0 4px';
+
+        if (v < 0) {
+          leftSpace.appendChild(bar);
+        } else {
+          rightSpace.appendChild(bar);
+        }
+
+        row.appendChild(leftSpace);
+        
+        const centerLine = document.createElement('div');
+        centerLine.style.width = '2px';
+        centerLine.style.height = '18px';
+        centerLine.style.background = 'rgba(255,255,255,0.2)';
+        row.appendChild(centerLine);
+        
+        row.appendChild(rightSpace);
+        container.appendChild(row);
       });
     }
 
