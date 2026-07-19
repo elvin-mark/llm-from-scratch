@@ -477,3 +477,132 @@ h1 {
   border-color: transparent;
   color: rgba(255,255,255,0.2);
 }
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  body {
+    height: 100dvh;
+    overflow-y: auto;
+  }
+
+  .app-layout {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .sidebar {
+    width: 100%;
+    padding: 1rem;
+    border-right: none;
+    border-bottom: 1px solid var(--glass-border);
+    flex-shrink: 0;
+    z-index: 20;
+    position: sticky;
+    top: 0;
+  }
+
+  .logo-container {
+    margin-bottom: 1rem;
+    justify-content: center;
+  }
+
+  h1 {
+    font-size: 1.5rem;
+  }
+
+  .logo {
+    width: 36px;
+    height: 36px;
+  }
+
+  .nav-menu {
+    flex-direction: row;
+    overflow-x: auto;
+    gap: 0.5rem;
+    padding-bottom: 0.5rem;
+  }
+
+  .nav-menu::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .nav-menu::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+  }
+
+  .nav-item {
+    padding: 0.8rem 1rem;
+    white-space: nowrap;
+    font-size: 0.9rem;
+    flex: 1;
+    justify-content: center;
+  }
+
+  .nav-item svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .main-content {
+    overflow-y: visible;
+  }
+
+  .content-section {
+    position: relative;
+    padding: 1.5rem 1rem;
+    height: auto;
+    overflow-y: visible;
+    transform: none;
+    display: none;
+  }
+
+  .content-section.active {
+    display: flex;
+    transform: none;
+  }
+
+  .section-header h2 {
+    font-size: 1.8rem;
+  }
+
+  .chat-container {
+    padding: 1rem;
+  }
+
+  .output-area {
+    min-height: 300px;
+  }
+
+  .input-area {
+    flex-direction: column;
+  }
+  
+  .input-area button {
+    padding: 1rem;
+  }
+
+  .controls {
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .widget-card {
+    padding: 1.5rem;
+  }
+
+  .bar-row {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .bar-label {
+    width: 100%;
+    font-size: 0.9rem;
+  }
+  
+  .attention-grid {
+    max-width: 100%;
+  }
+}
