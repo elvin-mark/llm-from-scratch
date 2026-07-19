@@ -422,3 +422,78 @@ if(bpeStepBtn) {
   bpeStepBtn.addEventListener('click', bpeStep);
   bpeResetBtn.addEventListener('click', bpeReset);
 }
+
+// 4. Attention Visualization Widget
+const attnQueryWords = document.querySelectorAll('.attn-word.q-word');
+const attnKeyWords = document.getElementById('attn-key-row');
+const attnLinesContainer = document.getElementById('attn-lines');
+
+function drawAttentionLines(activeIdx) {
+  if(!attnLinesContainer || !attnKeyWords) return;
+  attnLinesContainer.innerHTML = '';
+  
+  // Create SVG element
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.style.width = '100%';
+  svg.style.height = '100%';
+  
+  const containerRect = attnLinesContainer.getBoundingClientRect();
+  const qWord = attnQueryWords[activeIdx];
+  const qRect = qWord.getBoundingClientRect();
+  
+  const startX = qRect.left - containerRect.left + (qRect.width / 2);
+  const startY = qRect.top - containerRect.top; // top of query word
+  
+  // Randomize attention weights that sum to 1
+  let weights = [];
+  for(let i=0; i<=activeIdx; i++) weights.push(Math.random());
+  const sumWeights = weights.reduce((a,b)=>a+b, 0);
+  weights = weights.map(w => w / sumWeights);
+
+  const kChildren = attnKeyWords.children;
+  for(let i=0; i<=activeIdx; i++) {
+    const kWord = kChildren[i];
+    const kRect = kWord.getBoundingClientRect();
+    const endX = kRect.left - containerRect.left + (kRect.width / 2);
+    const endY = kRect.bottom - containerRect.top + 5; // bottom of key word
+    
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', startX);
+    line.setAttribute('y1', startY);
+    line.setAttribute('x2', endX);
+    line.setAttribute('y2', endY);
+    
+    // Line thickness based on attention weight
+    const strokeWidth = Math.max(1, weights[i] * 12);
+    const opacity = Math.max(0.2, weights[i] + 0.2);
+    
+    line.setAttribute('stroke', '#8b5cf6');
+    line.setAttribute('stroke-width', strokeWidth);
+    line.setAttribute('opacity', opacity);
+    line.setAttribute('stroke-linecap', 'round');
+    
+    svg.appendChild(line);
+  }
+  
+  attnLinesContainer.appendChild(svg);
+}
+
+if(attnQueryWords.length > 0) {
+  attnQueryWords.forEach(word => {
+    word.addEventListener('click', (e) => {
+      attnQueryWords.forEach(w => w.classList.remove('active'));
+      e.target.classList.add('active');
+      const idx = parseInt(e.target.getAttribute('data-idx'));
+      drawAttentionLines(idx);
+    });
+  });
+  
+  // Initial draw
+  setTimeout(() => drawAttentionLines(3), 100);
+  window.addEventListener('resize', () => {
+    const active = document.querySelector('.attn-word.q-word.active');
+    if(active) {
+      drawAttentionLines(parseInt(active.getAttribute('data-idx')));
+    }
+  });
+}
