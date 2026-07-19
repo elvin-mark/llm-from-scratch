@@ -313,6 +313,21 @@ h1 {
   font-size: 1.1rem;
 }
 
+.concept-title {
+  font-size: 1.4rem;
+  color: var(--primary);
+  margin-top: 3rem;
+  margin-bottom: 1rem;
+  font-weight: 600;
+}
+
+.section-divider {
+  border: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  margin: 3rem 0;
+}
+
 .feature-list {
   list-style: none;
   display: flex;

@@ -95,6 +95,35 @@
             </div>
             <p>This formulation ensures stability during deep training and allows for zero-allocation inference during production.</p>
 
+            <h3 class="concept-title">Rotary Positional Embeddings (RoPE)</h3>
+            <p>Unlike absolute positional embeddings that are simply added to the input, RoPE injects positional information by rotating the Query and Key vectors in a complex 2D plane. For a vector pair \((x_1, x_2)\) at position \(m\), the rotation is applied as:</p>
+            <div class="math-block">
+              $$
+              \begin{pmatrix} q_1 \\ q_2 \end{pmatrix} = \begin{pmatrix} \cos(m\theta) & -\sin(m\theta) \\ \sin(m\theta) & \cos(m\theta) \end{pmatrix} \begin{pmatrix} x_1 \\ x_2 \end{pmatrix}
+              $$
+            </div>
+            <p>This allows the attention dot-product to naturally decay as the relative distance between two tokens increases, giving the model a strong sense of sequence order without hardcoded absolute positions.</p>
+            
+            <h3 class="concept-title">SwiGLU Activation Function</h3>
+            <p>Instead of a standard ReLU or GELU, the Feed-Forward Network utilizes a Swish-Gated Linear Unit (SwiGLU). It computes two separate linear projections, applies the SiLU activation \(x \cdot \sigma(x)\) to one, and multiplies them together:</p>
+            <div class="math-block">
+              $$
+              \text{SwiGLU}(x) = \text{SiLU}(x W_1^T) \odot (x W_3^T)
+              $$
+            </div>
+            <p>This element-wise gating mechanism (\(\odot\)) acts as an information filter, allowing the network to selectively pass relevant features forward. Empirically, this yields significantly better performance in modern LLMs like Llama.</p>
+
+            <h3 class="concept-title">KV Caching (Autoregressive Generation)</h3>
+            <p>During inference, generating the \(N^{\text{th}}\) token requires computing attention over all \(N-1\) previous tokens. To avoid recalculating the Keys and Values for previous tokens, we dynamically cache them in memory:</p>
+            <div class="math-block">
+              $$
+              K_{\text{cache}} = [K_0, K_1, \dots, K_{N-1}] \quad \text{and} \quad V_{\text{cache}} = [V_0, V_1, \dots, V_{N-1}]
+              $$
+            </div>
+            <p>When the new query \(Q_N\) is generated, it simply attends to the cached matrices, converting a highly expensive \(O(N^2)\) operation into a fast \(O(N)\) operation per generated token.</p>
+
+            <hr class="section-divider" />
+
             <div class="interactive-widgets">
               <!-- Widget 1: Temperature & Softmax -->
               <div class="widget-card">
