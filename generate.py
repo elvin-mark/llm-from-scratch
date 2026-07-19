@@ -11,6 +11,7 @@ def generate(
     num_sentences: int = 5,
     tokenizer_path: str = "tokenizer.json",
     model_path: str = "tiny_llm.pth",
+    use_scratch_tokenizer: bool = False,
 ):
     """
     Generates text using the trained TinyLLM model.
@@ -27,7 +28,14 @@ def generate(
         num_sentences (int): Number of independent sentences to generate.
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    tokenizer = Tokenizer.from_file(tokenizer_path)
+    
+    if use_scratch_tokenizer:
+        from tokenizer_scratch import ScratchTokenizer
+        tokenizer = ScratchTokenizer.from_file(tokenizer_path)
+        print("Using educational Scratch Tokenizer!")
+    else:
+        tokenizer = Tokenizer.from_file(tokenizer_path)
+        print("Using HuggingFace Tokenizer!")
 
     vocab_size = tokenizer.get_vocab_size()
 
@@ -120,4 +128,8 @@ def generate(
 
 
 if __name__ == "__main__":
-    generate()
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--scratch-tokenizer", action="store_true", help="Use the educational from-scratch tokenizer")
+    args = parser.parse_args()
+    generate(use_scratch_tokenizer=args.scratch_tokenizer)
