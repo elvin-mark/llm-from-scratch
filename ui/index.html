@@ -144,36 +144,23 @@
             <p>Explore the mathematical foundations of the Transformer architecture through interactive data flow.</p>
           </header>
 
-          <!-- Sticky TOC -->
-          <div class="sticky-toc" style="position: sticky; top: 0; background: rgba(15,23,42,0.9); padding: 1rem; z-index: 100; border-bottom: 1px solid var(--glass-border); margin-bottom: 2rem; backdrop-filter: blur(10px);">
-            <div style="display: flex; gap: 1rem; overflow-x: auto; font-size: 0.9rem;">
-              <a href="#arch-overview" style="color: var(--primary); text-decoration: none;">Overview</a>
-              <a href="#arch-embedding" style="color: var(--text-muted); text-decoration: none;">1. Embedding</a>
-              <a href="#arch-rope" style="color: var(--text-muted); text-decoration: none;">2. RoPE</a>
-              <a href="#arch-rmsnorm" style="color: var(--text-muted); text-decoration: none;">3. RMSNorm</a>
-              <a href="#arch-attention" style="color: var(--text-muted); text-decoration: none;">4. Attention</a>
-              <a href="#arch-swiglu" style="color: var(--text-muted); text-decoration: none;">5. SwiGLU</a>
-              <a href="#arch-head" style="color: var(--text-muted); text-decoration: none;">6. Output</a>
-              <a href="#arch-equations" style="color: var(--text-muted); text-decoration: none;">Consolidated Math</a>
-            </div>
-          </div>
 
           <div class="docs-content">
             
             <div id="arch-overview" class="widget-card" style="margin-bottom: 2rem;">
               <h3 style="color: var(--primary);">Model Overview</h3>
-              <p>The data flows through several stages to predict the next token. Click any stage to deep-link to the chat and ask for an explanation!</p>
+              <p>The data flows through several stages to predict the next token. Click any stage to jump to its interactive explanation below!</p>
               
               <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem; margin-top: 1.5rem; padding: 1.5rem; background: rgba(0,0,0,0.2); border-radius: 8px;">
-                <button class="flow-btn" onclick="document.getElementById('prompt-input').value='Explain Token Embeddings'; document.getElementById('generate-btn').click(); document.querySelector('[data-target=\'chat-section\']').click();">Input Tokens</button>
+                <button class="flow-btn" onclick="document.getElementById('arch-embedding').scrollIntoView({behavior: 'smooth'})">Input Tokens & Embedding</button>
                 <div class="flow-arrow">↓</div>
-                <button class="flow-btn" onclick="document.getElementById('prompt-input').value='Explain RMSNorm'; document.getElementById('generate-btn').click(); document.querySelector('[data-target=\'chat-section\']').click();">RMSNorm</button>
+                <button class="flow-btn" onclick="document.getElementById('arch-rmsnorm').scrollIntoView({behavior: 'smooth'})">RMSNorm</button>
                 <div class="flow-arrow">↓</div>
-                <button class="flow-btn" onclick="document.getElementById('prompt-input').value='Explain RoPE and Attention'; document.getElementById('generate-btn').click(); document.querySelector('[data-target=\'chat-section\']').click();">Self-Attention (with RoPE)</button>
+                <button class="flow-btn" onclick="document.getElementById('arch-attention').scrollIntoView({behavior: 'smooth'})">Self-Attention (with RoPE)</button>
                 <div class="flow-arrow">↓</div>
-                <button class="flow-btn" onclick="document.getElementById('prompt-input').value='Explain SwiGLU'; document.getElementById('generate-btn').click(); document.querySelector('[data-target=\'chat-section\']').click();">SwiGLU FFN</button>
+                <button class="flow-btn" onclick="document.getElementById('arch-swiglu').scrollIntoView({behavior: 'smooth'})">SwiGLU FFN</button>
                 <div class="flow-arrow">↓</div>
-                <button class="flow-btn" onclick="document.getElementById('prompt-input').value='Explain the Output Head'; document.getElementById('generate-btn').click(); document.querySelector('[data-target=\'chat-section\']').click();">Output Head</button>
+                <button class="flow-btn" onclick="document.getElementById('arch-head').scrollIntoView({behavior: 'smooth'})">Output Head</button>
               </div>
             </div>
 
