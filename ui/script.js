@@ -353,6 +353,14 @@ const tokenizerOutput = document.getElementById('tokenizer-playground-output');
 const tokenizerCount = document.getElementById('tokenizer-count');
 
 if (tokenizerInput && bpeVisualizer && tokenizerOutput) {
+  const colors = [
+    'rgba(99, 102, 241, 0.3)',
+    'rgba(139, 92, 246, 0.3)',
+    'rgba(236, 72, 153, 0.3)',
+    'rgba(14, 165, 233, 0.3)',
+    'rgba(16, 185, 129, 0.3)'
+  ];
+
   let mergeTimeout;
   tokenizerInput.addEventListener('input', (e) => {
     clearTimeout(mergeTimeout);
@@ -371,11 +379,114 @@ if (tokenizerInput && bpeVisualizer && tokenizerOutput) {
       bpeVisualizer.innerHTML = chars.join(' ');
       
       const tokens = tokenizer.encode(text);
-      tokenizerCount.textContent = tokens.length;
-      tokenizerOutput.innerHTML = tokens.map(t => `<span class="example-chip">${tokenizer.idToToken[t] || '[UNK]'}</span>`).join('');
+      let displayIds = [...tokens];
+      if(displayIds.length > 0 && displayIds[0] === tokenizer.clsTokenId) displayIds.shift();
       
-    }, 500);
+      tokenizerCount.textContent = displayIds.length;
+      tokenizerOutput.innerHTML = '';
+      
+      displayIds.forEach((id, index) => {
+        const tokenStr = tokenizer.idToToken[id] || "[UNK]";
+        let displayStr = tokenStr.startsWith("Ġ") ? " " + tokenStr.substring(1) : tokenStr;
+        displayStr = displayStr.replace(/ /g, "␣");
+        
+        const chip = document.createElement('div');
+        chip.style.backgroundColor = colors[index % colors.length];
+        chip.style.border = `1px solid ${colors[index % colors.length].replace('0.3', '0.6')}`;
+        chip.style.padding = '0.4rem 0.8rem';
+        chip.style.borderRadius = '6px';
+        chip.style.fontFamily = 'monospace';
+        chip.style.display = 'flex';
+        chip.style.flexDirection = 'column';
+        chip.style.alignItems = 'center';
+        
+        chip.innerHTML = `
+          <span style="font-size: 1.1rem; color: white;">${displayStr.replace(/</g, '&lt;')}</span>
+          <span style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 0.2rem;">ID: ${id}</span>
+        `;
+        tokenizerOutput.appendChild(chip);
+      });
+      
+    }, 100);
   });
+}
+
+// 6. Step-by-Step BPE Widget
+const bpeTokensContainer = document.getElementById('bpe-tokens');
+const bpeStepBtn = document.getElementById('bpe-step-btn');
+const bpeResetBtn = document.getElementById('bpe-reset-btn');
+
+const initialText = "h e l l o _ t h e r e".split(' ');
+let currentTokens = [...initialText];
+
+const mergeRules = [
+  ["e", "r", "er"],
+  ["h", "e", "he"],
+  ["l", "l", "ll"],
+  ["he", "ll", "hell"],
+  ["hell", "o", "hello"],
+  ["t", "he", "the"],
+  ["the", "er", "there"],
+  ["_", "there", " there"], 
+  ["hello", " there", "hello there"]
+];
+let currentStepIndex = 0;
+
+function renderBpeTokens() {
+  if(!bpeTokensContainer) return;
+  bpeTokensContainer.innerHTML = '';
+  currentTokens.forEach(t => {
+    const div = document.createElement('div');
+    div.style.border = '1px solid var(--primary)';
+    div.style.padding = '0.3rem 0.6rem';
+    div.style.borderRadius = '4px';
+    div.style.backgroundColor = 'rgba(99, 102, 241, 0.1)';
+    div.textContent = t === "_" ? " " : t;
+    bpeTokensContainer.appendChild(div);
+  });
+}
+
+function bpeStep() {
+  if (currentStepIndex >= mergeRules.length) return;
+  
+  const rule = mergeRules[currentStepIndex];
+  let newTokens = [];
+  let i = 0;
+  
+  while(i < currentTokens.length) {
+    if (i < currentTokens.length - 1 && currentTokens[i] === rule[0] && currentTokens[i+1] === rule[1]) {
+      newTokens.push(rule[2]);
+      i += 2;
+    } else {
+      newTokens.push(currentTokens[i]);
+      i += 1;
+    }
+  }
+  
+  currentTokens = newTokens;
+  currentStepIndex++;
+  renderBpeTokens();
+  
+  if (currentStepIndex >= mergeRules.length) {
+    bpeStepBtn.disabled = true;
+    bpeStepBtn.textContent = "Fully Merged!";
+    bpeStepBtn.style.opacity = "0.5";
+  }
+}
+
+function bpeReset() {
+  currentTokens = [...initialText];
+  currentStepIndex = 0;
+  bpeStepBtn.disabled = false;
+  bpeStepBtn.textContent = "Next Merge Step";
+  bpeStepBtn.style.opacity = "1";
+  renderBpeTokens();
+}
+
+if(bpeStepBtn) {
+  renderBpeTokens();
+  bpeStepBtn.addEventListener('click', bpeStep);
+  bpeResetBtn.addEventListener('click', bpeReset);
 }
 
 // RoPE Visualizer
