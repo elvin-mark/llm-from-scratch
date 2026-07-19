@@ -1,6 +1,5 @@
 import torch
 import torch.nn.functional as F
-from tokenizers import Tokenizer
 from model import TinyLLM
 
 
@@ -28,12 +27,15 @@ def generate(
         num_sentences (int): Number of independent sentences to generate.
     """
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    
+
     if use_scratch_tokenizer:
-        from tokenizer_scratch import ScratchTokenizer
+        from tokenizer import ScratchTokenizer
+
         tokenizer = ScratchTokenizer.from_file(tokenizer_path)
         print("Using educational Scratch Tokenizer!")
     else:
+        from tokenizers import Tokenizer
+
         tokenizer = Tokenizer.from_file(tokenizer_path)
         print("Using HuggingFace Tokenizer!")
 
@@ -129,7 +131,12 @@ def generate(
 
 if __name__ == "__main__":
     import argparse
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("--scratch-tokenizer", action="store_true", help="Use the educational from-scratch tokenizer")
+    parser.add_argument(
+        "--scratch-tokenizer",
+        action="store_true",
+        help="Use the educational from-scratch tokenizer",
+    )
     args = parser.parse_args()
     generate(use_scratch_tokenizer=args.scratch_tokenizer)
