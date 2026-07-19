@@ -122,16 +122,29 @@
             </div>
             <p>When the new query \(Q_N\) is generated, it simply attends to the cached matrices, converting a highly expensive \(O(N^2)\) operation into a fast \(O(N)\) operation per generated token.</p>
 
+            <h3 class="concept-title">Top-K Sampling (Logit Truncation)</h3>
+            <p>To prevent the model from occasionally hallucinating highly unlikely "gibberish" tokens, we apply Top-K filtering before the softmax normalization. We sort the logits, keep only the \(K\) highest values, and force all others to \(-\infty\):</p>
+            <div class="math-block">
+              $$
+              v_i = \begin{cases} \text{logit}_i & \text{if } \text{logit}_i \in \text{Top}_K(\text{logits}) \\ -\infty & \text{otherwise} \end{cases}
+              $$
+            </div>
+            <p>When passed through the softmax function, the \(-\infty\) values collapse to exactly \(0\%\) probability, mathematically guaranteeing that the model only samples from the most sensible candidates.</p>
+
             <hr class="section-divider" />
 
             <div class="interactive-widgets">
-              <!-- Widget 1: Temperature & Softmax -->
+              <!-- Widget 1: Softmax, Temperature & Top-K -->
               <div class="widget-card">
-                <h3>Interactive: Softmax & Temperature</h3>
-                <p>See how temperature scales raw logits before converting them to probabilities. A low temperature makes the model confident (greedy), while a high temperature makes the distribution uniform (creative).</p>
+                <h3>Interactive: Temperature & Top-K Sampling</h3>
+                <p>Adjust <strong>Temperature</strong> to scale the raw logits (low = greedy, high = creative). Adjust <strong>Top-K</strong> to aggressively filter out low-probability words by setting their probability to zero.</p>
                 <div class="widget-controls">
                   <label for="widget-temp">Temperature (T = <span id="widget-temp-val">1.0</span>)</label>
                   <input type="range" id="widget-temp" min="0.1" max="3.0" step="0.1" value="1.0">
+                </div>
+                <div class="widget-controls">
+                  <label for="widget-topk">Top-K Filtering (K = <span id="widget-topk-val">4</span>)</label>
+                  <input type="range" id="widget-topk" min="1" max="4" step="1" value="4">
                 </div>
                 <div class="bars-container" id="softmax-bars">
                   <!-- JS will populate these -->
@@ -145,6 +158,21 @@
                 <button id="toggle-mask-btn" class="widget-btn">Apply Causal Mask (-∞)</button>
                 <div class="attention-grid" id="attn-grid">
                   <!-- JS will populate grid -->
+                </div>
+              </div>
+
+              <!-- Widget 3: Byte-Pair Encoding -->
+              <div class="widget-card">
+                <h3>Interactive: Byte-Pair Encoding (BPE)</h3>
+                <p>Watch how the tokenizer compresses data. It starts with individual characters and iteratively merges the most frequent adjacent pairs, shrinking the sequence length.</p>
+                <div class="bpe-display">
+                  <div class="bpe-tokens" id="bpe-tokens">
+                    <!-- JS will populate tokens -->
+                  </div>
+                </div>
+                <div style="display: flex; gap: 1rem;">
+                  <button id="bpe-step-btn" class="widget-btn" style="margin-bottom: 0;">Next Merge Step</button>
+                  <button id="bpe-reset-btn" class="widget-btn" style="margin-bottom: 0; background: rgba(255,255,255,0.05); color: #94a3b8; border-color: rgba(255,255,255,0.1);">Reset</button>
                 </div>
               </div>
             </div>

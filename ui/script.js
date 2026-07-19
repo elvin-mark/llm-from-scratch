@@ -247,9 +247,11 @@ navItems.forEach(item => {
 
 // --- Interactive Widgets Logic ---
 
-// 1. Softmax Temperature Widget
+// 1. Softmax Temperature & Top-K Widget
 const widgetTemp = document.getElementById('widget-temp');
 const widgetTempVal = document.getElementById('widget-temp-val');
+const widgetTopK = document.getElementById('widget-topk');
+const widgetTopKVal = document.getElementById('widget-topk-val');
 const softmaxBars = document.getElementById('softmax-bars');
 
 // Simulated raw logit outputs from a model
@@ -262,16 +264,25 @@ const rawLogits = [
 
 function updateSoftmaxWidget() {
   const T = parseFloat(widgetTemp.value);
+  const K = parseInt(widgetTopK.value);
   widgetTempVal.textContent = T.toFixed(1);
+  widgetTopKVal.textContent = K === 4 ? "4 (All)" : K;
   
   // Apply Temperature
-  const scaledLogits = rawLogits.map(item => item.logit / T);
+  let scaledLogits = rawLogits.map(item => item.logit / T);
+  
+  // Apply Top-K
+  const sorted = [...scaledLogits].sort((a,b) => b - a);
+  const threshold = sorted[K - 1];
+  scaledLogits = scaledLogits.map(v => v >= threshold ? v : -Infinity);
   
   // Softmax
-  const maxLogit = Math.max(...scaledLogits);
-  const exps = scaledLogits.map(v => Math.exp(v - maxLogit));
+  const validLogits = scaledLogits.filter(v => v !== -Infinity);
+  const maxLogit = validLogits.length > 0 ? Math.max(...validLogits) : 0;
+  
+  const exps = scaledLogits.map(v => v === -Infinity ? 0 : Math.exp(v - maxLogit));
   const sumExps = exps.reduce((a, b) => a + b, 0);
-  const probs = exps.map(v => v / sumExps);
+  const probs = exps.map(v => sumExps > 0 ? v / sumExps : 0);
   
   // Update UI
   softmaxBars.innerHTML = '';
@@ -294,6 +305,7 @@ function updateSoftmaxWidget() {
 
 if(widgetTemp) {
   widgetTemp.addEventListener('input', updateSoftmaxWidget);
+  widgetTopK.addEventListener('input', updateSoftmaxWidget);
   updateSoftmaxWidget(); // init
 }
 
@@ -343,4 +355,82 @@ function toggleMask() {
 if(maskBtn) {
   initAttnGrid();
   maskBtn.addEventListener('click', toggleMask);
+}
+
+// 3. Byte-Pair Encoding (BPE) Widget
+const bpeTokensContainer = document.getElementById('bpe-tokens');
+const bpeStepBtn = document.getElementById('bpe-step-btn');
+const bpeResetBtn = document.getElementById('bpe-reset-btn');
+
+// Initial string broken down into bytes/chars
+const initialText = "h e l l o _ t h e r e".split(' ');
+let currentTokens = [...initialText];
+
+// Simulated prioritized merge rules learned from a corpus
+const mergeRules = [
+  ["e", "r", "er"],
+  ["h", "e", "he"],
+  ["l", "l", "ll"],
+  ["he", "ll", "hell"],
+  ["hell", "o", "hello"],
+  ["t", "he", "the"],
+  ["the", "er", "there"],
+  ["_", "there", " there"], // Assuming _ is whitespace char
+  ["hello", " there", "hello there"]
+];
+let currentStepIndex = 0;
+
+function renderBpeTokens() {
+  if(!bpeTokensContainer) return;
+  bpeTokensContainer.innerHTML = '';
+  currentTokens.forEach(t => {
+    const div = document.createElement('div');
+    div.className = 'bpe-token';
+    div.textContent = t === "_" ? " " : t; // render _ as space for clarity if needed, or keep _
+    bpeTokensContainer.appendChild(div);
+  });
+}
+
+function bpeStep() {
+  if (currentStepIndex >= mergeRules.length) return;
+  
+  const rule = mergeRules[currentStepIndex];
+  let newTokens = [];
+  let i = 0;
+  
+  // Apply rule across sequence
+  while(i < currentTokens.length) {
+    if (i < currentTokens.length - 1 && currentTokens[i] === rule[0] && currentTokens[i+1] === rule[1]) {
+      newTokens.push(rule[2]);
+      i += 2;
+    } else {
+      newTokens.push(currentTokens[i]);
+      i += 1;
+    }
+  }
+  
+  currentTokens = newTokens;
+  currentStepIndex++;
+  renderBpeTokens();
+  
+  if (currentStepIndex >= mergeRules.length) {
+    bpeStepBtn.disabled = true;
+    bpeStepBtn.textContent = "Fully Merged!";
+    bpeStepBtn.style.opacity = "0.5";
+  }
+}
+
+function bpeReset() {
+  currentTokens = [...initialText];
+  currentStepIndex = 0;
+  bpeStepBtn.disabled = false;
+  bpeStepBtn.textContent = "Next Merge Step";
+  bpeStepBtn.style.opacity = "1";
+  renderBpeTokens();
+}
+
+if(bpeStepBtn) {
+  renderBpeTokens();
+  bpeStepBtn.addEventListener('click', bpeStep);
+  bpeResetBtn.addEventListener('click', bpeReset);
 }
