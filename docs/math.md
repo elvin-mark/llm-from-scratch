@@ -2,15 +2,18 @@
 
 This document provides the theoretical mathematical formulas defining the entire forward pass of the `TinyLLM` model. The architecture is a causal, decoder-only transformer heavily inspired by Llama 2/3.
 
-## The Full Forward Pass
+## Consolidated Model Equations
 
-The complete inference step of the network can be summarized by the following sequence of equations:
+The complete inference step of the network, from token IDs to output logits, can be summarized mathematically by the following consolidated equations:
 
 $$
 \begin{aligned}
 H_0 &= \text{Embed}(X) \\
 H_l &= F_l(H_{l-1}) \quad \text{for } l \in \{1, 2, \dots, N\} \\
-\text{Logits}(X) &= \text{RMSNorm}_{\text{final}}(H_N) W_{\text{head}}^T
+\text{Logits}(X) &= \text{RMSNorm}_{\text{final}}(H_N) W_{\text{head}}^T \\
+F_l(H) &= \tilde{H} + \left[ \text{SiLU}\left( \text{RMSNorm}_{\text{ffn}}(\tilde{H}) W_1^T \right) \odot \left( \text{RMSNorm}_{\text{ffn}}(\tilde{H}) W_3^T \right) \right] W_2^T \\
+\text{where} \quad \tilde{H} &= H + A_l\big(\text{RMSNorm}_{\text{attn}}(H)\big) \\
+A_l(x) &= \text{softmax}\left(\frac{\text{RoPE}(x W_q^T)\text{RoPE}(x W_k^T)^T}{\sqrt{d_{\text{head}}}} + M\right)(x W_v^T) W_o^T
 \end{aligned}
 $$
 
