@@ -362,8 +362,12 @@ if (tokenizerInput && bpeVisualizer && tokenizerOutput) {
   ];
 
   let mergeTimeout;
+  let animationInterval;
+  
   tokenizerInput.addEventListener('input', (e) => {
     clearTimeout(mergeTimeout);
+    clearInterval(animationInterval);
+    
     mergeTimeout = setTimeout(() => {
       if (!tokenizer) return;
       const text = e.target.value;
@@ -374,10 +378,6 @@ if (tokenizerInput && bpeVisualizer && tokenizerOutput) {
         return;
       }
       
-      // Simulate merging
-      const chars = Array.from(text).map(c => `<span style="border:1px solid var(--glass-border); padding:0.2rem 0.4rem; border-radius:4px;">${c}</span>`);
-      bpeVisualizer.innerHTML = chars.join(' ');
-      
       const tokens = tokenizer.encode(text);
       let displayIds = [...tokens];
       if(displayIds.length > 0 && displayIds[0] === tokenizer.clsTokenId) displayIds.shift();
@@ -385,10 +385,17 @@ if (tokenizerInput && bpeVisualizer && tokenizerOutput) {
       tokenizerCount.textContent = displayIds.length;
       tokenizerOutput.innerHTML = '';
       
+      // Prepare final chips for output area
+      const finalChips = [];
+      const targetSubwords = [];
+      
       displayIds.forEach((id, index) => {
         const tokenStr = tokenizer.idToToken[id] || "[UNK]";
         let displayStr = tokenStr.startsWith("Ġ") ? " " + tokenStr.substring(1) : tokenStr;
-        displayStr = displayStr.replace(/ /g, "␣");
+        // Clean up text for BPE logic (no space replacement, just literal)
+        let rawStr = tokenStr.replace('Ġ', ' ');
+        
+        targetSubwords.push(rawStr);
         
         const chip = document.createElement('div');
         chip.style.backgroundColor = colors[index % colors.length];
@@ -401,13 +408,96 @@ if (tokenizerInput && bpeVisualizer && tokenizerOutput) {
         chip.style.alignItems = 'center';
         
         chip.innerHTML = `
-          <span style="font-size: 1.1rem; color: white;">${displayStr.replace(/</g, '&lt;')}</span>
+          <span style="font-size: 1.1rem; color: white;">${displayStr.replace(/ /g, "␣").replace(/</g, '&lt;')}</span>
           <span style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 0.2rem;">ID: ${id}</span>
         `;
-        tokenizerOutput.appendChild(chip);
+        finalChips.push(chip);
       });
       
-    }, 100);
+      // Animate merges in bpeVisualizer
+      // 1. Break everything into characters
+      let currentSequence = text.split('');
+      // We will perform random-looking merges until we reach the targetSubwords
+      
+      let targetSequence = [...targetSubwords];
+      
+      function renderSeq(seq, activeMergeIndex = -1) {
+        bpeVisualizer.innerHTML = seq.map((s, i) => {
+          const isActive = (i === activeMergeIndex || i === activeMergeIndex + 1);
+          const bg = isActive ? 'rgba(99, 102, 241, 0.6)' : 'transparent';
+          const border = isActive ? 'var(--primary)' : 'var(--glass-border)';
+          return `<span style="border:1px solid ${border}; background: ${bg}; padding:0.2rem 0.4rem; border-radius:4px; transition: all 0.2s;">${s.replace(/ /g, '␣')}</span>`;
+        }).join(' ');
+      }
+      
+      renderSeq(currentSequence);
+      
+      // 2. Generate a plan of merges
+      // We know targetSequence is the final grouping. We just need to merge adjacent items in currentSequence if they belong to the same target token.
+      let mergePlan = [];
+      let charIdx = 0;
+      for (let t = 0; t < targetSequence.length; t++) {
+        let tokenLen = targetSequence[t].length;
+        if (tokenLen > 1) {
+          // It requires merges. Since it's tokenLen characters, it requires tokenLen - 1 merges
+          for (let m = 0; m < tokenLen - 1; m++) {
+            mergePlan.push({ tokenIndex: t }); // Just keeping track, actual logic happens live
+          }
+        }
+      }
+      
+      let planSteps = 0;
+      
+      animationInterval = setInterval(() => {
+        // Find first place where current sequence items can be merged to form the target
+        let merged = false;
+        
+        // Match currentSequence chunks with targetSequence
+        let currIdx = 0;
+        let targetIdx = 0;
+        
+        while (currIdx < currentSequence.length - 1 && targetIdx < targetSequence.length) {
+          let currStr = currentSequence[currIdx];
+          let targetStr = targetSequence[targetIdx];
+          
+          if (currStr !== targetStr) {
+            // This chunk is incomplete! Merge it with the next one.
+            let nextStr = currentSequence[currIdx + 1];
+            
+            // Highlight step
+            renderSeq(currentSequence, currIdx);
+            
+            setTimeout(() => {
+              // Perform merge
+              currentSequence.splice(currIdx, 2, currStr + nextStr);
+              renderSeq(currentSequence);
+              
+              if (currentSequence.length === targetSequence.length) {
+                // Done! Show final chips
+                clearInterval(animationInterval);
+                setTimeout(() => {
+                  finalChips.forEach(c => tokenizerOutput.appendChild(c));
+                }, 200);
+              }
+            }, 300);
+            
+            merged = true;
+            break;
+          } else {
+            currIdx++;
+            targetIdx++;
+          }
+        }
+        
+        if (!merged) {
+          // Finished early or no merges needed
+          clearInterval(animationInterval);
+          finalChips.forEach(c => tokenizerOutput.appendChild(c));
+        }
+        
+      }, 800);
+      
+    }, 500);
   });
 }
 
