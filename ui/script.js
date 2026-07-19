@@ -690,7 +690,7 @@ if (rmsSlider && rmsBarsIn && rmsBarsOut) {
         const bar = document.createElement('div');
         const w = Math.min(100, Math.abs(v) * scaleFactor);
         bar.style.width = `${w}px`;
-        bar.style.height = '100%';
+        bar.style.height = '14px';
         bar.style.background = v > 0 ? 'var(--primary)' : '#f43f5e';
         bar.style.borderRadius = v > 0 ? '0 4px 4px 0' : '4px 0 0 4px';
 
