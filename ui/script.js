@@ -107,6 +107,10 @@ async function initialize() {
     promptInput.disabled = false;
     generateBtn.disabled = false;
     promptInput.focus();
+    
+    if(typeof updateTokenizerPlayground === 'function') {
+      updateTokenizerPlayground();
+    }
   } catch (err) {
     console.error(err);
     textDisplay.innerHTML = `<span style="color: red;">Error loading model: ${err.message}</span>`;
@@ -495,4 +499,68 @@ if(attnQueryWords.length > 0) {
       drawAttentionLines(parseInt(active.getAttribute('data-idx')));
     }
   });
+}
+
+// 5. Tokenizer Playground Widget
+const tokenizerPlaygroundInput = document.getElementById('tokenizer-playground-input');
+const tokenizerPlaygroundOutput = document.getElementById('tokenizer-playground-output');
+const tokenizerCount = document.getElementById('tokenizer-count');
+
+function updateTokenizerPlayground() {
+  if (!tokenizer || !tokenizerPlaygroundInput || !tokenizerPlaygroundOutput) return;
+  const text = tokenizerPlaygroundInput.value;
+  if (!text) {
+    tokenizerPlaygroundOutput.innerHTML = '<div style="color: var(--text-muted);">Tokens will appear here...</div>';
+    tokenizerCount.textContent = '0';
+    return;
+  }
+  
+  const ids = tokenizer.encode(text).filter(id => id !== tokenizer.clsTokenId && id !== tokenizer.unkTokenId); 
+  // NOTE: BasicTokenizer prepends [CLS] by default. We remove it for the playground if present so they just see the text's tokens.
+  // Actually, our BasicTokenizer might not have `clsTokenId` array, it just pushes it first.
+  
+  const displayIds = tokenizer.encode(text);
+  // Remove CLS token from display if it's the first token, to make it cleaner
+  if(displayIds.length > 0 && displayIds[0] === tokenizer.clsTokenId) {
+    displayIds.shift();
+  }
+  
+  tokenizerPlaygroundOutput.innerHTML = '';
+  tokenizerCount.textContent = displayIds.length;
+  
+  // Use colors to differentiate adjacent tokens
+  const colors = [
+    'rgba(99, 102, 241, 0.3)',  // Indigo
+    'rgba(139, 92, 246, 0.3)',  // Purple
+    'rgba(236, 72, 153, 0.3)',  // Pink
+    'rgba(14, 165, 233, 0.3)',  // Sky
+    'rgba(16, 185, 129, 0.3)'   // Emerald
+  ];
+  
+  displayIds.forEach((id, index) => {
+    const tokenStr = tokenizer.idToToken[id] || "[UNK]";
+    let displayStr = tokenStr.startsWith("Ġ") ? " " + tokenStr.substring(1) : tokenStr;
+    // Visually show spaces
+    displayStr = displayStr.replace(/ /g, "␣");
+    
+    const chip = document.createElement('div');
+    chip.style.backgroundColor = colors[index % colors.length];
+    chip.style.border = `1px solid ${colors[index % colors.length].replace('0.3', '0.6')}`;
+    chip.style.padding = '0.4rem 0.8rem';
+    chip.style.borderRadius = '6px';
+    chip.style.fontFamily = 'monospace';
+    chip.style.display = 'flex';
+    chip.style.flexDirection = 'column';
+    chip.style.alignItems = 'center';
+    
+    chip.innerHTML = `
+      <span style="font-size: 1.1rem; color: white;">${displayStr.replace(/</g, '&lt;')}</span>
+      <span style="font-size: 0.75rem; color: rgba(255,255,255,0.6); margin-top: 0.2rem;">ID: ${id}</span>
+    `;
+    tokenizerPlaygroundOutput.appendChild(chip);
+  });
+}
+
+if(tokenizerPlaygroundInput) {
+  tokenizerPlaygroundInput.addEventListener('input', updateTokenizerPlayground);
 }
