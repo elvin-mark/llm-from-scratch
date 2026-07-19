@@ -115,6 +115,12 @@ h1 {
   opacity: 1;
 }
 
+.sidebar-footer {
+  margin-top: auto;
+  padding-top: 2rem;
+  width: 100%;
+}
+
 .github-link {
   display: flex;
   align-items: center;
