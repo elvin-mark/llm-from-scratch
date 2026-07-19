@@ -35,6 +35,7 @@ This repository contains all the building blocks to train and generate text from
 If you are interested in exactly how the mathematics and auto-regressive flows of this model work, we provide detailed markdown documentation with Mermaid flowchart diagrams:
 
 - [Architecture Breakdown](docs/architecture.md): Deep dive into Pre-RMSNorm, RoPE, and SwiGLU FFNs.
+- [Mathematical Foundations](docs/math.md): The theoretical mathematical formulas defining the entire forward pass.
 - [Training Pipeline](docs/training.md): Overview of dataset ingestion, hyperparameter choices, and the CrossEntropy backward pass loop.
 - [Tokenizer Architecture](docs/tokenizer.md): Explanation of the Byte-Pair Encoding (BPE) training and inference algorithms.
 - [C Inference Architecture](c/ARCH.md): Explanation of the memory-mapped C inference engines and dynamic Int8 quantization.
