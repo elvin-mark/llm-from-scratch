@@ -234,9 +234,13 @@ ight)V $$</div>
               <p>Words attend to previous words to build context. Future tokens are masked out (grayed out). Hover or click a token to see its attention fan!</p>
               <div class="widget-card">
                 <div class="attention-grid" id="attn-viz-container" style="position: relative;">
+                                    <div class="attn-key-row" id="attn-key-row">
+                    <div class="attn-word">The</div><div class="attn-word">cute</div><div class="attn-word">cat</div><div class="attn-word">purred</div>
+                  </div>
                   <svg id="attn-lines" class="attn-lines" preserveAspectRatio="none"></svg>
-                  <div class="attn-row" id="attn-row-q"></div>
-                  <div class="attn-row" id="attn-row-k"></div>
+                  <div class="attn-query-row" id="attn-query-row">
+                    <div class="attn-word q-word" data-idx="0">The</div><div class="attn-word q-word" data-idx="1">cute</div><div class="attn-word q-word" data-idx="2">cat</div><div class="attn-word q-word active" data-idx="3">purred</div>
+                  </div>
                 </div>
               </div>
             </div>
