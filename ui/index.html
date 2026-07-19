@@ -247,24 +247,37 @@
           </header>
 
           <div class="docs-content">
-            <ul class="feature-list">
-              <li>
-                <strong>Rotary Positional Embeddings (RoPE)</strong>
-                <p>Injects relative positional information directly into the attention mechanism by rotating the query and key representations. It uses a complex frequency spectrum to map positions.</p>
-              </li>
-              <li>
-                <strong>Root Mean Square Normalization (RMSNorm)</strong>
-                <p>Used instead of standard LayerNorm. It removes the mean-centering step for maximum computational efficiency. Applied in a "Pre-Norm" fashion before Attention and FFN blocks.</p>
-              </li>
-              <li>
-                <strong>SwiGLU Activation</strong>
-                <p>The Feed-Forward Network uses the Swish-Gated Linear Unit, utilizing the element-wise Hadamard product to gate information flow intelligently.</p>
-              </li>
-              <li>
-                <strong>Byte-Pair Encoding (BPE)</strong>
-                <p>A custom Python tokenizer that parses raw text and merges adjacent character pairs based on corpus frequency, matching HuggingFace spec.</p>
-              </li>
-            </ul>
+            <div class="widget-card" style="margin-bottom: 2rem;">
+              <h3 style="color: var(--primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>
+                1. PyTorch Model Training
+              </h3>
+              <p style="margin-bottom: 1rem; color: var(--text-color);">The core language model is written entirely from scratch in Python using <strong>PyTorch</strong>. It defines custom modules for Rotary Embeddings, Multi-Head Attention, and SwiGLU FFNs. The model was trained locally on a custom text corpus to predict the next token using Cross-Entropy Loss.</p>
+            </div>
+
+            <div class="widget-card" style="margin-bottom: 2rem;">
+              <h3 style="color: var(--primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+                2. Custom BPE Tokenizer
+              </h3>
+              <p style="margin-bottom: 1rem; color: var(--text-color);">We built a custom <strong>Byte-Pair Encoding (BPE)</strong> tokenizer that mimics the HuggingFace specifications. During training, a Python script compiles character merges based on corpus frequency. For the browser interface, we implemented a mirrored Javascript <code>BasicTokenizer</code> that parses the exported <code>tokenizer.json</code> to perform greedy longest-prefix tokenization identically in the client.</p>
+            </div>
+
+            <div class="widget-card" style="margin-bottom: 2rem;">
+              <h3 style="color: var(--primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+                3. ONNX Export & Quantization
+              </h3>
+              <p style="margin-bottom: 1rem; color: var(--text-color);">To move the PyTorch model (`.pth`) to the web, we traced and exported the computation graph to the <strong>ONNX</strong> format. We then applied <strong>INT8 Dynamic Quantization</strong> to the Linear weights. This compressed the model from 6.2MB to just 2.3MB, significantly reducing bandwidth and memory requirements while preserving generation quality.</p>
+            </div>
+
+            <div class="widget-card" style="margin-bottom: 2rem;">
+              <h3 style="color: var(--primary); margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
+                4. Client-Side WebAssembly (WASM) Inference
+              </h3>
+              <p style="margin-bottom: 1rem; color: var(--text-color);">The "Test Model" chat interface runs entirely in your browser without any backend servers. We use <strong>ONNX Runtime Web (ort)</strong>, which leverages WebAssembly (WASM) to execute the model's neural network operators at near-native speeds directly on your local CPU.</p>
+            </div>
           </div>
         </section>
 
