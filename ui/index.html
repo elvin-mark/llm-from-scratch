@@ -183,7 +183,7 @@
                 <h3 class="concept-title">2. Rotary Positional Embedding (RoPE)</h3>
                 <button class="toggle-btn" onclick="this.parentElement.nextElementSibling.classList.toggle('hidden');">Toggle Math</button>
               </div>
-              <div class="math-block hidden">$$ R_{\Theta,m}x = (x_1 \cos m\theta_1 - x_2 \sin m\theta_1, x_1 \sin m\theta_1 + x_2 \cos m\theta_1, ...) $$</div>
+              <div class="math-block hidden">$$ \begin{pmatrix} x^{(1)}_{m} \\ x^{(2)}_{m} \end{pmatrix} \rightarrow \begin{pmatrix} \cos(m\theta) & -\sin(m\theta) \\ \sin(m\theta) & \cos(m\theta) \end{pmatrix} \begin{pmatrix} x^{(1)}_{m} \\ x^{(2)}_{m} \end{pmatrix} $$</div>
               <p>RoPE injects positional information by rotating the Query and Key vectors in a 2D plane based on their position in the sequence.</p>
               <div class="widget-card">
                 <label>Position (m): <span id="rope-pos-val">0</span></label>

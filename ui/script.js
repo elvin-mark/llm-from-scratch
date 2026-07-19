@@ -560,30 +560,73 @@ const ropePosVal = document.getElementById('rope-pos-val');
 const ropeCanvas = document.getElementById('rope-canvas');
 if (ropeSlider && ropeCanvas) {
   const ctx = ropeCanvas.getContext('2d');
+  
   function drawRoPE(pos) {
     ctx.clearRect(0, 0, 200, 200);
     const cx = 100, cy = 100;
     
-    // Draw axes
+    // Draw grid/axes
     ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+    ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.moveTo(0, cy); ctx.lineTo(200, cy);
     ctx.moveTo(cx, 0); ctx.lineTo(cx, 200);
     ctx.stroke();
     
-    // Rotate vector
-    const angle = pos * (Math.PI / 8); // example angle
+    // Draw bounds circle
     const r = 80;
-    const x = cx + r * Math.cos(angle);
-    const y = cy - r * Math.sin(angle);
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI*2);
+    ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    ctx.setLineDash([]); // Reset
     
-    ctx.strokeStyle = '#6366f1';
+    // Base vector (Position 0, m=0)
+    // Let's say it starts at angle Pi/6
+    const baseAngle = Math.PI / 6; 
+    const base_x = cx + r * Math.cos(baseAngle);
+    const base_y = cy - r * Math.sin(baseAngle);
+    
+    // Draw original point vector (faint)
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(base_x, base_y);
+    ctx.stroke();
+    
+    // Draw original point
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.beginPath();
+    ctx.arc(base_x, base_y, 4, 0, Math.PI*2);
+    ctx.fill();
+    
+    // Rotation logic: Each position rotates it by some theta
+    const theta = Math.PI / 8;
+    const currentAngle = baseAngle + (pos * theta);
+    
+    const x = cx + r * Math.cos(currentAngle);
+    const y = cy - r * Math.sin(currentAngle);
+    
+    // Draw rotation arc if pos > 0
+    if (pos > 0) {
+      ctx.beginPath();
+      // Canvas arc needs negative angles for standard math coordinates
+      ctx.arc(cx, cy, r/2, -currentAngle, -baseAngle, false);
+      ctx.strokeStyle = 'rgba(236, 72, 153, 0.6)'; // Pink arc
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    
+    // Draw rotated vector
+    ctx.strokeStyle = '#6366f1'; // Primary color
     ctx.lineWidth = 3;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.lineTo(x, y);
     ctx.stroke();
     
+    // Draw rotated point
     ctx.fillStyle = '#818cf8';
     ctx.beginPath();
     ctx.arc(x, y, 6, 0, Math.PI*2);
