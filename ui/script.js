@@ -356,10 +356,12 @@ if (tokenizerInput && bpeVisualizer && tokenizerOutput) {
 
   let mergeTimeout;
   let animationInterval;
+  let innerTimeout;
   
   tokenizerInput.addEventListener('input', (e) => {
     clearTimeout(mergeTimeout);
     clearInterval(animationInterval);
+    clearTimeout(innerTimeout);
     
     mergeTimeout = setTimeout(() => {
       if (!tokenizer) return;
@@ -444,7 +446,7 @@ if (tokenizerInput && bpeVisualizer && tokenizerOutput) {
           // Highlight step
           renderSeq(currentSequence, mergeIdx);
           
-          setTimeout(() => {
+          innerTimeout = setTimeout(() => {
             // Perform merge
             let mergedStr = currentSequence[mergeIdx].str + currentSequence[mergeIdx+1].str;
             let targetIdx = currentSequence[mergeIdx].targetIdx;
@@ -453,7 +455,7 @@ if (tokenizerInput && bpeVisualizer && tokenizerOutput) {
             
             if (currentSequence.length === targetSubwords.length) {
               clearInterval(animationInterval);
-              setTimeout(() => {
+              innerTimeout = setTimeout(() => {
                 finalChips.forEach(c => tokenizerOutput.appendChild(c));
               }, 150);
             }
