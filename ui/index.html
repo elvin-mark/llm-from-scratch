@@ -205,8 +205,20 @@
               <div class="widget-card">
                 <label>Input Variance Multiplier: <span id="rmsnorm-val">1.0</span></label>
                 <input type="range" id="rmsnorm-slider" min="0.1" max="5.0" step="0.1" value="1.0" style="width: 100%; margin: 1rem 0;">
-                <div id="rmsnorm-bars" class="bars-container" style="height: 150px; align-items: flex-end;"></div>
-                <p style="text-align: center; font-size: 0.8rem; margin-top: 1rem; color: var(--text-muted);">Normalized Output (always consistent scale)</p>
+                
+                <div style="display: flex; justify-content: space-around; align-items: flex-end; margin-top: 1.5rem;">
+                  <div style="text-align: center; width: 45%;">
+                    <div id="rmsnorm-bars-in" class="bars-container" style="height: 120px; align-items: flex-end;"></div>
+                    <p style="font-size: 0.8rem; margin-top: 1rem; color: var(--text-muted);">Raw Input Vector</p>
+                  </div>
+                  
+                  <div style="font-size: 2rem; color: var(--primary); padding-bottom: 40px;">➔</div>
+                  
+                  <div style="text-align: center; width: 45%;">
+                    <div id="rmsnorm-bars-out" class="bars-container" style="height: 120px; align-items: flex-end;"></div>
+                    <p style="font-size: 0.8rem; margin-top: 1rem; color: var(--text-muted);">Normalized Output (Constant Scale)</p>
+                  </div>
+                </div>
               </div>
             </div>
 

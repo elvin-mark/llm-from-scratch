@@ -654,11 +654,13 @@ if (ropeSlider && ropeCanvas) {
 // RMSNorm Visualizer
 const rmsSlider = document.getElementById('rmsnorm-slider');
 const rmsVal = document.getElementById('rmsnorm-val');
-const rmsBars = document.getElementById('rmsnorm-bars');
+const rmsBarsIn = document.getElementById('rmsnorm-bars-in');
+const rmsBarsOut = document.getElementById('rmsnorm-bars-out');
 
-if (rmsSlider && rmsBars) {
+if (rmsSlider && rmsBarsIn && rmsBarsOut) {
   function drawRMSBars(variance) {
-    rmsBars.innerHTML = '';
+    rmsBarsIn.innerHTML = '';
+    rmsBarsOut.innerHTML = '';
     const baseVals = [0.2, -0.5, 0.8, -0.3, 0.6, -0.9, 0.4];
     
     // Calculate RMS
@@ -666,15 +668,22 @@ if (rmsSlider && rmsBars) {
     const rms = Math.sqrt(scaledVals.reduce((acc, val) => acc + val*val, 0) / scaledVals.length) || 1;
     const normVals = scaledVals.map(v => v / rms);
     
-    normVals.forEach(v => {
-      const h = Math.abs(v) * 40; // max height ~100px
-      const bar = document.createElement('div');
-      bar.style.width = '20px';
-      bar.style.height = `${h}px`;
-      bar.style.background = v > 0 ? 'var(--primary)' : '#f43f5e';
-      bar.style.borderRadius = '4px 4px 0 0';
-      rmsBars.appendChild(bar);
-    });
+    function drawRow(container, vals, scaleFactor) {
+      vals.forEach(v => {
+        const h = Math.min(120, Math.abs(v) * scaleFactor); // max height ~120px
+        const bar = document.createElement('div');
+        bar.style.width = '20px';
+        bar.style.height = `${h}px`;
+        bar.style.background = v > 0 ? 'var(--primary)' : '#f43f5e';
+        bar.style.borderRadius = '4px 4px 0 0';
+        container.appendChild(bar);
+      });
+    }
+
+    // Input varies widely (scale directly by variance * base_scale)
+    drawRow(rmsBarsIn, scaledVals, 40);
+    // Output remains stable (scale by base_scale)
+    drawRow(rmsBarsOut, normVals, 40);
   }
   
   rmsSlider.addEventListener('input', (e) => {
