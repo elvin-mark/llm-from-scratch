@@ -86,6 +86,16 @@ uv run python generate.py
 
 *(Optional: Generate text using the pure-Python educational tokenizer by appending `--scratch-tokenizer`)*
 
+### 5. NumPy-Only Inference (Pure NumPy)
+
+For a hyper-compact, lightweight inference option that bypasses PyTorch dependencies and runs entirely on `numpy`, you can use `inference.py`:
+
+```bash
+uv run python inference.py --weights tiny_llm.pth --vocab-size 4000 --prompt "안녕하세요" --tokens 40
+```
+
+This script runs the entire transformer forward pass (Attention, RoPE, SwiGLU, RMSNorm) using bare-metal NumPy operations. It supports loading both `.pth` (PyTorch) checkpoints and `.npz` (NumPy compressed) weight packages.
+
 ---
 
 ## Standalone Native Inference (C & CUDA)
