@@ -314,7 +314,7 @@ for l_i in range(n_layers):
             st.session_state.ablation_mask[(l_i, h_i)] = is_checked
 
 # Tab Layout
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(
     [
         "🕸️ Self-Attention Mapping",
         "🔍 Logit Lens & Layer Attribution",
@@ -322,6 +322,7 @@ tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
         "🎯 Causal Word Saliency (Gradients)",
         "📊 Predictability & Entropy",
         "🎮 Interactive Generator",
+        "📈 Weight Distributions & Heatmaps",
     ]
 )
 
@@ -621,3 +622,171 @@ with tab6:
                 st.plotly_chart(fig_candidates, use_container_width=True)
         else:
             st.info("Maximum sequence length reached. Please reset to continue generating.")
+
+with tab7:
+    st.header("📈 Weight Distributions & Parameter Heatmaps")
+    st.write("Inspect the trained weight matrices of the model. You can view their value distributions (histograms), matrix shapes, summary statistics, and 2D spatial weight patterns.")
+
+    # 1. Selection interface
+    col_sel1, col_sel2, col_sel3 = st.columns(3)
+    
+    with col_sel1:
+        category = st.selectbox(
+            "Select Weight Category:",
+            ["Layer Weight Matrices", "Global Weight Matrices"],
+            key="tab7_category"
+        )
+        
+    if category == "Layer Weight Matrices":
+        with col_sel2:
+            layer_idx = st.selectbox(
+                "Select Layer:",
+                range(n_layers),
+                index=0,
+                key="tab7_layer_idx"
+            )
+        with col_sel3:
+            tensor_name = st.selectbox(
+                "Select Layer Tensor:",
+                [
+                    "attention.wq.weight",
+                    "attention.wk.weight",
+                    "attention.wv.weight",
+                    "attention.wo.weight",
+                    "feed_forward.w1.weight",
+                    "feed_forward.w2.weight",
+                    "feed_forward.w3.weight"
+                ],
+                key="tab7_layer_tensor"
+            )
+            
+        # Extract the tensor
+        block = model.layers[layer_idx]
+        if tensor_name == "attention.wq.weight":
+            selected_param = block.attention.wq.weight
+        elif tensor_name == "attention.wk.weight":
+            selected_param = block.attention.wk.weight
+        elif tensor_name == "attention.wv.weight":
+            selected_param = block.attention.wv.weight
+        elif tensor_name == "attention.wo.weight":
+            selected_param = block.attention.wo.weight
+        elif tensor_name == "feed_forward.w1.weight":
+            selected_param = block.feed_forward.w1.weight
+        elif tensor_name == "feed_forward.w2.weight":
+            selected_param = block.feed_forward.w2.weight
+        elif tensor_name == "feed_forward.w3.weight":
+            selected_param = block.feed_forward.w3.weight
+            
+    else: # Global Weight Matrices
+        with col_sel2:
+            tensor_name = st.selectbox(
+                "Select Global Tensor:",
+                ["tok_embeddings.weight", "output.weight"],
+                key="tab7_global_tensor"
+            )
+        # Extract the tensor
+        if tensor_name == "tok_embeddings.weight":
+            selected_param = model.tok_embeddings.weight
+        else:
+            selected_param = model.output.weight
+            
+    # Extract tensor data as NumPy
+    param_tensor = selected_param.detach().cpu().numpy()
+    
+    # 2. Display metadata and statistics
+    st.markdown(f"### `{tensor_name}` (Shape: `{param_tensor.shape}`) Details")
+    
+    # Calculate statistics
+    mean_val = np.mean(param_tensor)
+    std_val = np.std(param_tensor)
+    min_val = np.min(param_tensor)
+    max_val = np.max(param_tensor)
+    
+    # Sparsity threshold config
+    col_stat1, col_stat2 = st.columns([1, 4])
+    with col_stat1:
+        sparsity_threshold = st.number_input("Sparsity threshold (|w| < epsilon):", value=1e-3, format="%.1e", key="tab7_sparsity_thresh")
+    
+    sparsity_pct = (np.abs(param_tensor) < sparsity_threshold).mean() * 100
+    
+    # Render stats row
+    col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
+    col_m1.metric("Mean", f"{mean_val:.5f}")
+    col_m2.metric("Std Dev", f"{std_val:.5f}")
+    col_m3.metric("Min", f"{min_val:.5f}")
+    col_m4.metric("Max", f"{max_val:.5f}")
+    col_m5.metric("Sparsity (%)", f"{sparsity_pct:.2f}%")
+    
+    st.divider()
+    
+    # 3. Visualizations
+    col_vis1, col_vis2 = st.columns(2)
+    
+    # Histogram of distributions
+    with col_vis1:
+        st.subheader("📊 Weight Value Distribution")
+        flat_weights = param_tensor.flatten()
+        
+        # Downsample large tensors to keep UI highly responsive
+        if len(flat_weights) > 100000:
+            flat_weights_display = np.random.choice(flat_weights, size=100000, replace=False)
+            st.info(f"Showing a random sample of 100,000 weights (out of {len(flat_weights):,}) for rendering performance.")
+        else:
+            flat_weights_display = flat_weights
+            
+        if HAS_PLOTLY:
+            fig_hist = px.histogram(
+                x=flat_weights_display,
+                labels={'x': 'Weight Value'},
+                title=f"Histogram of {tensor_name}",
+                color_discrete_sequence=['#818CF8']
+            )
+            fig_hist.update_layout(template="plotly_dark", showlegend=False, height=400)
+            st.plotly_chart(fig_hist, use_container_width=True)
+        else:
+            fig, ax = plt.subplots(figsize=(6, 4))
+            sns.histplot(flat_weights_display, color='#818CF8', kde=True, ax=ax)
+            ax.set_title(f"Histogram of {tensor_name}")
+            ax.set_xlabel("Weight Value")
+            st.pyplot(fig)
+            
+    # 2D Heatmap of weights
+    with col_vis2:
+        st.subheader("🗺️ 2D Weight Matrix Heatmap")
+        
+        slice_matrix = False
+        max_rows = 200
+        max_cols = 200
+        
+        if param_tensor.ndim == 2:
+            num_rows, num_cols = param_tensor.shape
+            if num_rows > max_rows or num_cols > max_cols:
+                slice_matrix = st.checkbox(
+                    f"Crop visualization to first {max_rows}x{max_cols} elements (Highly recommended for speed)",
+                    value=True,
+                    key="tab7_slice_chk"
+                )
+                
+            if slice_matrix:
+                display_matrix = param_tensor[:max_rows, :max_cols]
+                st.write(f"Showing cropped slice of shape `{display_matrix.shape}` from original `{param_tensor.shape}`")
+            else:
+                display_matrix = param_tensor
+                
+            if HAS_PLOTLY:
+                abs_max = float(np.max(np.abs(display_matrix)))
+                fig_heat = px.imshow(
+                    display_matrix,
+                    color_continuous_scale="RdBu",
+                    range_color=[-abs_max, abs_max],
+                    title=f"Heatmap of {tensor_name}" + (" (Cropped)" if slice_matrix else "")
+                )
+                fig_heat.update_layout(template="plotly_dark", height=400)
+                st.plotly_chart(fig_heat, use_container_width=True)
+            else:
+                fig, ax = plt.subplots(figsize=(6, 4))
+                sns.heatmap(display_matrix, cmap="RdBu", center=0.0, ax=ax)
+                ax.set_title(f"Heatmap of {tensor_name}" + (" (Cropped)" if slice_matrix else ""))
+                st.pyplot(fig)
+        else:
+            st.warning("Heatmap is only available for 2D weight matrices (linear and embedding layers).")
