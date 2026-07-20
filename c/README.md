@@ -7,12 +7,14 @@ Taking heavy inspiration from Andrej Karpathy's `llama2.c`, this implementation 
 ## Implementations
 
 1. **`run.c`**: A pure C implementation. By default, it runs single-threaded matrix multiplications. If `USE_BLAS=1` is provided during compilation, it uses hardware-accelerated OpenBLAS for massive CPU speedups.
-2. **`run.cu`**: A CUDA C++ implementation designed for NVIDIA GPUs. It uses `cuBLAS` for matrix multiplications and custom `__global__` kernels for operations like `RMSNorm`, `RoPE`, and `SwiGLU` to keep execution entirely on the device.
+2. **`runq.c`**: A quantized C implementation. It performs dynamic INT8 matrix multiplications to reduce memory footprint and execute quantized inference on the CPU.
+3. **`run.cu`**: A CUDA C++ implementation designed for NVIDIA GPUs. It uses `cuBLAS` for matrix multiplications and custom `__global__` kernels for operations like `RMSNorm`, `RoPE`, and `SwiGLU` to keep execution entirely on the device.
 
 ## How it Works
 
-- **`export.py`**: A Python script that loads your `tiny_llm.pth` PyTorch model and serializes all of its `float32` tensors directly into a contiguous binary sequence (`model.bin`). It also dumps the HuggingFace `tokenizer.json` into a binary format (`vocab.bin`) for the C code to read.
-- Both executables define struct pointers into the memory-mapped `model.bin`, load the vocabulary, allocate the KV cache, and run the autoregressive generation loop.
+- **`export.py`**: A Python script that loads your `tiny_llm.pth` PyTorch model and serializes all of its `float32` tensors directly into a contiguous binary sequence (`model.bin`). It also dumps the HuggingFace `tokenizer.json` into a binary format (`vocab.bin`) for the C/CUDA code to read.
+- **`export_q8.py`**: A Python script that loads your `tiny_llm.pth` model and serializes the 2D weights as quantized INT8 values with associated FP32 scale factors per row into a binary sequence (`model_q8.bin`).
+- The executables define struct pointers into the memory-mapped model files (`model.bin` or `model_q8.bin`), load the vocabulary, allocate the KV cache, and run the autoregressive generation loop.
 
 ## Usage
 
@@ -45,3 +47,23 @@ Execute the CUDA binary:
 ```bash
 ./run_cu
 ```
+
+### 4. Quantized CPU Inference (INT8)
+To run the model with 8-bit dynamic quantization:
+
+1. Export the model weights into the quantized binary format:
+   ```bash
+   uv run python export_q8.py
+   ```
+   This creates `model_q8.bin` in the current folder.
+
+2. Compile the quantized C code:
+   ```bash
+   make runq
+   ```
+
+3. Execute the binary:
+   ```bash
+   ./runq
+   ```
+
