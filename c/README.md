@@ -6,9 +6,14 @@ Taking heavy inspiration from Andrej Karpathy's `llama2.c`, this implementation 
 
 ## Implementations
 
+### Inference Engines
 1. **`run.c`**: A pure C implementation. By default, it runs single-threaded matrix multiplications. If `USE_BLAS=1` is provided during compilation, it uses hardware-accelerated OpenBLAS for massive CPU speedups.
 2. **`runq.c`**: A quantized C implementation. It performs dynamic INT8 matrix multiplications to reduce memory footprint and execute quantized inference on the CPU.
 3. **`run.cu`**: A CUDA C++ implementation designed for NVIDIA GPUs. It uses `cuBLAS` for matrix multiplications and custom `__global__` kernels for operations like `RMSNorm`, `RoPE`, and `SwiGLU` to keep execution entirely on the device.
+
+### Training Engines
+1. **`train.c`**: A pure C training script. It implements the entire forward-backward autograd pass from scratch, including Attention causal softmax backward, RMSNorm backward, SwiGLU backward, CrossEntropyLoss backward, and AdamW optimizer updates. Supports OpenMP multi-threading and OpenBLAS acceleration.
+2. **`train.cu`**: A GPU-optimized training script written in CUDA C++. It keeps all training states (parameters, activations, gradients, optimizer moments) in VRAM and launches custom forward/backward kernels for Attention, RoPE, RMSNorm, SwiGLU, and CrossEntropy, coupled with cuBLAS for matrix contractions.
 
 ## How it Works
 
@@ -66,4 +71,34 @@ To run the model with 8-bit dynamic quantization:
    ```bash
    ./runq
    ```
+
+---
+
+## Training from Scratch in C & CUDA
+
+Both training scripts run training on a synthetic sequence over 40 steps, outputting the optimization loss reduction in real-time.
+
+### 1. CPU Training (C)
+Compile and run the training program on the CPU:
+```bash
+# Standard compile
+make train
+
+# Or compile with OpenBLAS acceleration (highly recommended)
+make train USE_BLAS=1
+
+# Execute the trainer
+./train
+```
+
+### 2. GPU Training (CUDA)
+If you have an NVIDIA GPU and NVCC installed, compile and execute the GPU trainer:
+```bash
+# Compile CUDA trainer
+make train_cu
+
+# Execute the GPU trainer
+./train_cu
+```
+
 
