@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -O3 -ffast-math
+CFLAGS = -Wall -Wextra -O3
 LDFLAGS = -lm
 
 # To use BLAS, run: make run USE_BLAS=1
