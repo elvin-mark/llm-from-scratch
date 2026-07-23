@@ -1,0 +1,3 @@
+# Ignore all generated model checkpoints, tokenizers, and adapters inside checkpoints/
+*
+!.gitignore

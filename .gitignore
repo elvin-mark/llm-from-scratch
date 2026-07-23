@@ -1,6 +1,7 @@
 corpus.txt
 tokenizer.json
 tiny_llm.pth
+*.pth
 *.onnx
 *.onnx.data
 
