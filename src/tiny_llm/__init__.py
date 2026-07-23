@@ -1,13 +1,32 @@
-from .model import TinyLLM, RMSNorm, FeedForward, Attention, TransformerBlock, precompute_freqs_cis, apply_rotary_emb
-from .tokenizer import ScratchTokenizer
-from .data import SentencesDataset
+from tiny_llm.configs import TinyLLMConfig, MoELLMConfig
+from tiny_llm.models.dense_llm import TinyLLM, TransformerBlock
+from tiny_llm.models.moe_llm import MoELLM, MoETransformerBlock
+from tiny_llm.modules import (
+    RMSNorm,
+    Attention,
+    GroupedQueryAttention,
+    FeedForward,
+    MoERouter,
+    MoEFeedForward,
+    precompute_freqs_cis,
+    apply_rotary_emb,
+)
+from tiny_llm.tokenizer import ScratchTokenizer
+from tiny_llm.data import SentencesDataset
 
 __all__ = [
     "TinyLLM",
-    "RMSNorm",
-    "FeedForward",
-    "Attention",
+    "MoELLM",
     "TransformerBlock",
+    "MoETransformerBlock",
+    "TinyLLMConfig",
+    "MoELLMConfig",
+    "RMSNorm",
+    "Attention",
+    "GroupedQueryAttention",
+    "FeedForward",
+    "MoERouter",
+    "MoEFeedForward",
     "precompute_freqs_cis",
     "apply_rotary_emb",
     "ScratchTokenizer",

@@ -6,14 +6,19 @@ A simple, educational implementation of a custom causal language model built fro
 
 ## Features & Architecture
 
-This repository contains all the building blocks to train and generate text from a custom language model:
+This repository contains all the building blocks to train and generate text from custom language models:
 
+- **Multiple Architecture Models**:
+  - **`TinyLLM`**: Standard dense Llama-style model (Multi-Head Attention + Dense SwiGLU).
+  - **`MoELLM`**: Advanced Mixture-of-Experts model (Grouped Query Attention + MoE SwiGLU with Top-K Router).
+- **Grouped Query Attention (GQA)**: Reduces memory footprint by sharing Key/Value heads across Query head groups.
+- **Mixture-of-Experts (MoE)**: Gated routing mechanism that dispatches tokens dynamically to top-K expert MLPs.
 - **Rotary Position Embeddings (RoPE)**: Implements complex frequency-based relative positional embeddings for query/key tensors.
 - **RMSNorm**: Root Mean Square Layer Normalization used before attention and feed-forward blocks.
-- **SwiGLU Activation**: Feed-forward networks using Swish-Gated Linear Units (SiLU-gated linear projections) instead of standard ReLU/GELU.
-- **Custom BPE Tokenizer**: Helper scripts to train a Byte-Pair Encoding (BPE) tokenizer using the Hugging Face `tokenizers` library, or an educational from-scratch pure Python BPE implementation.
+- **SwiGLU Activation**: Feed-forward networks using Swish-Gated Linear Units (SiLU-gated linear projections).
+- **Custom BPE Tokenizer**: Helper scripts to train a Byte-Pair Encoding (BPE) tokenizer using Hugging Face `tokenizers` or an educational pure-Python BPE implementation.
 - **Top-K & Temperature Sampling**: Autoregressive text generation with customizable temperature scaling and top-k filtering.
-- **Standalone C & CUDA Engines**: Highly optimized, zero-allocation standalone inference and autograd training engines written in pure C and CUDA, supporting OpenBLAS and Int8 Quantization.
+- **Standalone C & CUDA Engines**: Highly optimized, zero-allocation standalone inference and autograd training engines written in pure C and CUDA.
 - **Mechanistic Interpretability Dashboard**: Streamlit app for attention map visualization, logit lens, FFN activations, and head ablation.
 - **In-Browser WebAssembly / WebGL UI**: Deployed serverless Web UI running ONNX Runtime Web.
 
@@ -24,16 +29,21 @@ This repository contains all the building blocks to train and generate text from
 ```text
 llm-from-scratch/
 ├── src/
-│   └── tiny_llm/             # Core package (model, tokenizer, dataset)
+│   └── tiny_llm/             # Modular package
+│       ├── configs.py        # Configuration dataclasses (TinyLLMConfig, MoELLMConfig)
+│       ├── modules/          # Primitives (RMSNorm, RoPE, MHA, GQA, SwiGLU, MoE)
+│       ├── models/           # Models (TinyLLM, MoELLM)
+│       ├── tokenizer.py      # BPE Tokenizer implementation
+│       └── data.py           # Dataset loaders
 ├── scripts/                  # High-level entrypoints (train, generate, inference, interpretability)
 ├── tools/
 │   └── export/               # Export utilities (export_c, export_q8, export_onnx)
 ├── c/                        # Bare-metal C & CUDA engines (run.c, train.c, run.cu, train.cu)
 ├── ui/                       # Web interface & deployment configs
-├── tests/                    # Unit testing suite (test_model.py, test_data.py)
+├── tests/                    # Unit testing suite (test_model.py, test_data.py, test_moe.py)
 ├── docs/                     # Documentation & architecture guides
 ├── data/                     # Training datasets (corpus.txt)
-└── checkpoints/              # Model weights & tokenizer files (tiny_llm.pth, tokenizer.json)
+└── checkpoints/              # Model weights & tokenizer files
 ```
 
 ---
@@ -43,6 +53,7 @@ llm-from-scratch/
 If you are interested in exactly how the mathematics and auto-regressive flows of this model work, we provide detailed markdown documentation with Mermaid flowchart diagrams:
 
 - [Architecture Breakdown](docs/architecture.md): Deep dive into Pre-RMSNorm, RoPE, and SwiGLU FFNs.
+- [Advanced Architecture (GQA & MoE)](docs/moe_gqa.md): Theoretical breakdown of Grouped Query Attention and Mixture-of-Experts routing.
 - [Mathematical Foundations](docs/math.md): The theoretical mathematical formulas defining the entire forward pass.
 - [Training Pipeline](docs/training.md): Overview of dataset ingestion, hyperparameter choices, and the CrossEntropy backward pass loop.
 - [Tokenizer Architecture](docs/tokenizer.md): Explanation of the Byte-Pair Encoding (BPE) training and inference algorithms.
