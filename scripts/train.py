@@ -1,12 +1,18 @@
+import os
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 from tokenizers import Tokenizer
-from data import SentencesDataset
-from model import TinyLLM
+from tiny_llm.data import SentencesDataset
+from tiny_llm.model import TinyLLM
 
 
-def train(tokenizer_path: str = "tokenizer.json", corpus_path="corpus.txt"):
+def train(tokenizer_path: str = None, corpus_path: str = None):
+    if tokenizer_path is None:
+        tokenizer_path = "checkpoints/tokenizer.json" if os.path.exists("checkpoints/tokenizer.json") else "tokenizer.json"
+    if corpus_path is None:
+        corpus_path = "data/corpus.txt" if os.path.exists("data/corpus.txt") else "corpus.txt"
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using device:", device)
 
@@ -53,8 +59,10 @@ def train(tokenizer_path: str = "tokenizer.json", corpus_path="corpus.txt"):
         avg_loss = total_loss / len(dataloader)
         print(f"Epoch {epoch + 1} completed. Average Loss: {avg_loss:.4f}")
 
-    torch.save(model.state_dict(), "tiny_llm.pth")
-    print("Model saved to tiny_llm.pth")
+    save_path = "checkpoints/tiny_llm.pth"
+    os.makedirs(os.path.dirname(save_path), exist_ok=True)
+    torch.save(model.state_dict(), save_path)
+    print(f"Model saved to {save_path}")
 
 
 if __name__ == "__main__":

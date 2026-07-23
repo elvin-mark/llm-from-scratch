@@ -1,6 +1,7 @@
+import os
 import torch
 import torch.nn.functional as F
-from model import TinyLLM
+from tiny_llm.model import TinyLLM
 
 
 def generate(
@@ -8,8 +9,8 @@ def generate(
     temperature: float = 0.8,
     top_k: int = 50,
     num_sentences: int = 5,
-    tokenizer_path: str = "tokenizer.json",
-    model_path: str = "tiny_llm.pth",
+    tokenizer_path: str = None,
+    model_path: str = None,
     use_scratch_tokenizer: bool = False,
 ):
     """
@@ -26,10 +27,15 @@ def generate(
                      Reduces the chance of generating gibberish.
         num_sentences (int): Number of independent sentences to generate.
     """
+    if tokenizer_path is None:
+        tokenizer_path = "checkpoints/tokenizer.json" if os.path.exists("checkpoints/tokenizer.json") else "tokenizer.json"
+    if model_path is None:
+        model_path = "checkpoints/tiny_llm.pth" if os.path.exists("checkpoints/tiny_llm.pth") else "tiny_llm.pth"
+
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     if use_scratch_tokenizer:
-        from tokenizer import ScratchTokenizer
+        from tiny_llm.tokenizer import ScratchTokenizer
 
         tokenizer = ScratchTokenizer.from_file(tokenizer_path)
         print("Using educational Scratch Tokenizer!")

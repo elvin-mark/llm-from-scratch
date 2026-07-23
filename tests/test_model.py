@@ -1,7 +1,7 @@
 import torch
 import math
 import pytest
-from model import TinyLLM, Attention, apply_rotary_emb, precompute_freqs_cis
+from tiny_llm.model import TinyLLM, Attention, apply_rotary_emb, precompute_freqs_cis
 
 def test_rope_shapes():
     """Verify that applying rotary embeddings does not change shape."""

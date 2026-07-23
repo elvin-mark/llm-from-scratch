@@ -12,7 +12,10 @@ dependencies = [
     "numpy>=1.24.0",
     "plotly>=5.18.0",
     "matplotlib>=3.10.9",
-    "seaborn>=0.13.2"
+    "seaborn>=0.13.2",
+    "onnx>=1.15.0",
+    "onnxruntime>=1.17.0",
+    "onnxscript>=0.1.0"
 ]
 
 [dependency-groups]
@@ -20,7 +23,15 @@ dev = [
     "pytest>=8.0.0",
 ]
 
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
 [tool.pytest.ini_options]
-pythonpath = ["."]
+pythonpath = ["src", "."]
+
 
 

@@ -8,7 +8,7 @@ from torch.utils.data import Dataset
 
 
 def prepare_and_train_tokenizer(
-    input_file: str, corpus_file: str, vocab_size: int = 4000, use_scratch_tokenizer: bool = False
+    input_file: str, corpus_file: str, vocab_size: int = 4000, use_scratch_tokenizer: bool = False, tokenizer_out: str = "tokenizer.json"
 ):
     """
     Extracts sentences from a TSV dataset and trains a custom BPE tokenizer.
@@ -23,6 +23,8 @@ def prepare_and_train_tokenizer(
         input_file (str): Path to the input TSV file (e.g., 'kor_sentences.tsv').
         corpus_file (str): Path where the extracted raw text will be saved.
         vocab_size (int): Target vocabulary size for the BPE tokenizer. Default is 4000.
+        use_scratch_tokenizer (bool): If True, trains using ScratchTokenizer.
+        tokenizer_out (str): Output path for the trained tokenizer configuration.
     """
     print("Extracting sentences...")
     # Step 1: Read TSV and extract the text column
@@ -39,7 +41,7 @@ def prepare_and_train_tokenizer(
 
     print("Training tokenizer...")
     if use_scratch_tokenizer:
-        from tokenizer import ScratchTokenizer
+        from tiny_llm.tokenizer import ScratchTokenizer
         import json
         
         with open(corpus_file, "r", encoding="utf-8") as f:
@@ -47,10 +49,10 @@ def prepare_and_train_tokenizer(
             
         tokenizer_data = ScratchTokenizer.train(text, vocab_size=vocab_size)
         
-        with open("tokenizer.json", "w", encoding="utf-8") as f:
+        with open(tokenizer_out, "w", encoding="utf-8") as f:
             json.dump(tokenizer_data, f, ensure_ascii=False, indent=2)
             
-        print(f"Tokenizer trained with vocab size {len(tokenizer_data['model']['vocab'])} and saved to tokenizer.json")
+        print(f"Tokenizer trained with vocab size {len(tokenizer_data['model']['vocab'])} and saved to {tokenizer_out}")
     else:
         # Step 2: Initialize BPE Tokenizer with an unknown token fallback
         tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
@@ -68,10 +70,10 @@ def prepare_and_train_tokenizer(
         tokenizer.train(files=[corpus_file], trainer=trainer)
     
         # Save the resulting tokenizer configuration
-        tokenizer.save("tokenizer.json")
+        tokenizer.save(tokenizer_out)
     
         print(
-            f"Tokenizer trained with vocab size {tokenizer.get_vocab_size()} and saved to tokenizer.json"
+            f"Tokenizer trained with vocab size {tokenizer.get_vocab_size()} and saved to {tokenizer_out}"
         )
 
 
@@ -118,14 +120,3 @@ class SentencesDataset(Dataset):
         y = self.data[idx][1:]
         return x, y
 
-
-if __name__ == "__main__":
-    import argparse
-    parser = argparse.ArgumentParser()
-    parser.add_argument("input_file", type=str, help="Path to the input TSV file")
-    parser.add_argument("--scratch-tokenizer", action="store_true", help="Train using the from-scratch Python tokenizer instead of HuggingFace's Rust library")
-    args = parser.parse_args()
-
-    # wget https://downloads.tatoeba.org/exports/per_language/kor/kor_sentences.tsv.bz2
-    # bunzip2 ./kor_sentences.tsv.bz2
-    prepare_and_train_tokenizer(input_file=args.input_file, corpus_file="corpus.txt", use_scratch_tokenizer=args.scratch_tokenizer)

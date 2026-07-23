@@ -74,6 +74,8 @@ if __name__ == "__main__":
         import torch
         w = {k: v.detach().numpy().astype(np.float32) for k, v in torch.load(args.weights, map_location="cpu").items()}
         
+    import os
     from tokenizers import Tokenizer
-    tok = Tokenizer.from_file("./tokenizer.json")
+    tokenizer_file = "checkpoints/tokenizer.json" if os.path.exists("checkpoints/tokenizer.json") else "tokenizer.json"
+    tok = Tokenizer.from_file(tokenizer_file)
     print(generate(w, lambda t: tok.encode(t).ids, tok.decode, args.prompt, args.tokens, args.temperature, args.dim, args.n_heads, args.max_seq_len))

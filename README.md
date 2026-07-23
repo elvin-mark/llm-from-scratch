@@ -2,6 +2,8 @@
 
 A simple, educational implementation of a custom causal language model built from scratch in PyTorch, utilizing modern transformer architecture principles (similar to Llama).
 
+🌐 **Live Web Demo**: [https://llm-from-scratch-edu.web.app/](https://llm-from-scratch-edu.web.app/)
+
 ## Features & Architecture
 
 This repository contains all the building blocks to train and generate text from a custom language model:
@@ -11,22 +13,28 @@ This repository contains all the building blocks to train and generate text from
 - **SwiGLU Activation**: Feed-forward networks using Swish-Gated Linear Units (SiLU-gated linear projections) instead of standard ReLU/GELU.
 - **Custom BPE Tokenizer**: Helper scripts to train a Byte-Pair Encoding (BPE) tokenizer using the Hugging Face `tokenizers` library, or an educational from-scratch pure Python BPE implementation.
 - **Top-K & Temperature Sampling**: Autoregressive text generation with customizable temperature scaling and top-k filtering.
-- **Standalone C & CUDA Inference**: Highly optimized, zero-allocation standalone inference engines written in C and CUDA, supporting OpenBLAS and Int8 Quantization.
+- **Standalone C & CUDA Engines**: Highly optimized, zero-allocation standalone inference and autograd training engines written in pure C and CUDA, supporting OpenBLAS and Int8 Quantization.
+- **Mechanistic Interpretability Dashboard**: Streamlit app for attention map visualization, logit lens, FFN activations, and head ablation.
+- **In-Browser WebAssembly / WebGL UI**: Deployed serverless Web UI running ONNX Runtime Web.
 
 ---
 
 ## File Structure
 
-- [model.py](model.py): Core neural network components (`RMSNorm`, `Attention`, `FeedForward`, `TransformerBlock`, and `TinyLLM`).
-- [data.py](data.py): Tokenizer training pipeline and PyTorch dataset loader (`SentencesDataset`).
-- [train.py](train.py): Training loop configuration, optimizer setup, and checkpointing.
-- [generate.py](generate.py): Autoregressive text generator with Top-K and temperature scaling.
-- [interpretability.py](interpretability.py): Streamlit dashboard for mechanistic interpretability.
-- [export_onnx.py](export_onnx.py): Script to export PyTorch weights into optimized ONNX/Int8 formats.
-- [tokenizer.py](tokenizer.py): Educational, from-scratch pure Python implementation of a BPE tokenizer.
-- [c/](c/): Standalone inference engine implementations in pure C, OpenBLAS, CUDA, and Quantized Int8.
-- [ui/](ui/): Frontend browser application utilizing ONNX Runtime Web.
-- [docs/](docs/): Extensive documentation detailing the LLaMA-based architecture, tokenization, and training flow.
+```text
+llm-from-scratch/
+├── src/
+│   └── tiny_llm/             # Core package (model, tokenizer, dataset)
+├── scripts/                  # High-level entrypoints (train, generate, inference, interpretability)
+├── tools/
+│   └── export/               # Export utilities (export_c, export_q8, export_onnx)
+├── c/                        # Bare-metal C & CUDA engines (run.c, train.c, run.cu, train.cu)
+├── ui/                       # Web interface & deployment configs
+├── tests/                    # Unit testing suite (test_model.py, test_data.py)
+├── docs/                     # Documentation & architecture guides
+├── data/                     # Training datasets (corpus.txt)
+└── checkpoints/              # Model weights & tokenizer files (tiny_llm.pth, tokenizer.json)
+```
 
 ---
 
@@ -53,7 +61,14 @@ Install dependencies and synchronize your local virtual environment:
 uv sync
 ```
 
-### 2. Prepare the Tokenizer and Corpus
+### 2. Run the Unit Test Suite
+
+Verify that all model modules, RoPE dot-product invariants, causal masking, and dataset loaders pass:
+```bash
+uv run pytest
+```
+
+### 3. Prepare the Tokenizer and Corpus
 
 To train the tokenizer, download and extract a TSV sentences dataset (e.g. from Tatoeba):
 ```bash
@@ -63,98 +78,132 @@ bunzip2 ./kor_sentences.tsv.bz2
 
 Then train the BPE tokenizer and generate the text corpus using `uv run`:
 ```bash
-uv run python data.py ./kor_sentences.tsv
+uv run python scripts/prepare_data.py ./kor_sentences.tsv
 ```
-This produces `corpus.txt` and `tokenizer.json`.
+This produces `data/corpus.txt` and `checkpoints/tokenizer.json`.
 
 *(Optional: You can train the tokenizer using our educational pure-Python BPE algorithm from scratch by appending `--scratch-tokenizer`)*
 
-### 3. Train the Model
+### 4. Train the Model
 
 To train the `TinyLLM` model on the generated corpus:
 ```bash
-uv run python train.py
+uv run python scripts/train.py
 ```
-This will train the model and save the weights to `tiny_llm.pth`.
+This will train the model and save the weights to `checkpoints/tiny_llm.pth`.
 
-### 4. Generate Text
+### 5. Generate Text
 
 Once trained, generate sentences autoregressively:
 ```bash
-uv run python generate.py
+uv run python scripts/generate.py
 ```
 
 *(Optional: Generate text using the pure-Python educational tokenizer by appending `--scratch-tokenizer`)*
 
-### 5. NumPy-Only Inference (Pure NumPy)
+### 6. NumPy-Only Inference (Pure NumPy)
 
-For a hyper-compact, lightweight inference option that bypasses PyTorch dependencies and runs entirely on `numpy`, you can use `inference.py`:
+For a hyper-compact, lightweight inference option that bypasses PyTorch dependencies and runs entirely on `numpy`, you can use `scripts/inference.py`:
 
 ```bash
-uv run python inference.py --weights tiny_llm.pth --vocab-size 4000 --prompt "안녕하세요" --tokens 40
+uv run python scripts/inference.py --weights checkpoints/tiny_llm.pth --vocab-size 4000 --prompt "안녕하세요" --tokens 40
 ```
 
 This script runs the entire transformer forward pass (Attention, RoPE, SwiGLU, RMSNorm) using bare-metal NumPy operations. It supports loading both `.pth` (PyTorch) checkpoints and `.npz` (NumPy compressed) weight packages.
 
 ---
 
-## Standalone Native Inference (C & CUDA)
+## Standalone Native C & CUDA Engines
 
-You can run the model entirely standalone without Python or PyTorch using our memory-mapped native inference engines located in the `c/` directory.
+You can run both **inference** and **training from scratch** entirely standalone without Python or PyTorch using our low-level C and CUDA engines in the `c/` directory.
+
+### 1. C & CUDA Inference
 
 1. **Export the Weights**:
    ```bash
-   cd c
-   uv run python export.py
+   uv run python tools/export/export_c.py
    ```
+   This generates `c/model.bin` and `c/vocab.bin`.
+
 2. **Compile and Run**:
-   Choose your hardware target:
    ```bash
+   cd c
    # Standard CPU (Naive Loops)
-   make run
+   make run && ./run
    
    # CPU with OpenBLAS Acceleration
-   make run USE_BLAS=1
+   make run USE_BLAS=1 && ./run
    
    # GPU with Custom CUDA Kernels
-   make run_cu
+   make run_cu && ./run_cu
    ```
 
 3. **Int8 Dynamic Quantization**:
-   For severe memory footprint reduction, export the model using row-wise Int8 quantization and run the dynamic quantizer:
+   For severe memory footprint reduction, export the model using row-wise Int8 quantization:
    ```bash
-   uv run python export_q8.py
-   make runq
-   ./runq
+   uv run python tools/export/export_q8.py
+   cd c && make runq && ./runq
    ```
-   
+
+### 2. C & CUDA Training (Autograd from Scratch)
+
+You can also train the model directly in C or CUDA:
+```bash
+cd c
+# Train on CPU (with OpenMP multi-threading and optional OpenBLAS)
+make train && ./train
+
+# Train on GPU (with custom CUDA kernels and cuBLAS)
+make train_cu && ./train_cu
+```
+
 ---
 
 ## Serverless Web UI Inference (ONNX)
 
-You can run this model entirely inside any modern web browser utilizing **ONNX Runtime Web** (WebGL/WASM acceleration)—no backend API required!
+You can test the deployed model in your browser or run it locally using **ONNX Runtime Web** (WebGL/WASM acceleration)—no backend server required!
 
+* 🌐 **Live Web Demo**: [https://llm-from-scratch-edu.web.app/](https://llm-from-scratch-edu.web.app/)
+
+### Local Web UI Execution:
 1. **Export the Model**:
-   Convert the `tiny_llm.pth` weights to `.onnx` and apply Int8 quantization:
+   Convert the `tiny_llm.pth` weights to `.onnx` and generate an Int8 quantized version:
    ```bash
-   # Make sure onnx and onnxruntime are installed
-   uv pip install onnx onnxruntime onnxscript
-   uv run python export_onnx.py --quantize
+   uv sync
+   uv run python tools/export/export_onnx.py --quantize
    ```
-2. **Launch the UI**:
-   Since browsers block fetching local binary files, serve the directory locally:
+2. **Launch the Local Server**:
+   Serve the web directory locally:
    ```bash
    python3 -m http.server 8000
    ```
-   Then open [http://localhost:8000/ui/](http://localhost:8000/ui/) to chat with your custom LLM right in the browser!
+   Then open [http://localhost:8000/ui/](http://localhost:8000/ui/) to run inference right in your browser!
 
 ---
 
 ## Mechanistic Interpretability Dashboard
 
-An interactive dashboard is available to inspect the model's inner workings (Self-Attention maps, Logit Lens, FFN activation scans, and gradient-based word saliency).
+An interactive Streamlit dashboard is available to inspect the model's inner workings (Self-Attention maps, Logit Lens, FFN activation scans, weight heatmaps/histograms, and head ablation).
 
 To start the dashboard, run:
 ```bash
-uv run streamlit run interpretability.py
+uv run streamlit run scripts/interpretability.py
 ```
+
+---
+
+## Building the Python Package (`dist/`)
+
+To compile the `tiny_llm` package into a redistributable wheel (`.whl`) and source tarball (`.tar.gz`):
+
+```bash
+uv run python scripts/build_package.py
+# Or run native uv build:
+uv build
+```
+
+The resulting packages will be generated inside the `dist/` directory:
+* `dist/llm_from_scratch-0.1.0-py3-none-any.whl`
+* `dist/llm_from_scratch-0.1.0.tar.gz`
+
+

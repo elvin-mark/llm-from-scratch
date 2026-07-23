@@ -6,12 +6,28 @@ import sys
 # Add parent directory to path to import TinyLLM
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tokenizers import Tokenizer
-from model import TinyLLM
+from tiny_llm.model import TinyLLM
 
 
-def export_model():
-    print("Loading model and tokenizer...")
-    tokenizer = Tokenizer.from_file("../tokenizer.json")
+def export_model(model_path=None, tokenizer_path=None, output_path=None, vocab_path=None):
+    if output_path is None:
+        output_path = "model.bin" if os.path.basename(os.getcwd()) == "c" else "c/model.bin"
+    if vocab_path is None:
+        vocab_path = "vocab.bin" if os.path.basename(os.getcwd()) == "c" else "c/vocab.bin"
+
+    if model_path is None:
+        for p in ["checkpoints/tiny_llm.pth", "../checkpoints/tiny_llm.pth", "tiny_llm.pth", "../tiny_llm.pth"]:
+            if os.path.exists(p):
+                model_path = p
+                break
+    if tokenizer_path is None:
+        for p in ["checkpoints/tokenizer.json", "../checkpoints/tokenizer.json", "tokenizer.json", "../tokenizer.json"]:
+            if os.path.exists(p):
+                tokenizer_path = p
+                break
+
+    print(f"Loading model ({model_path}) and tokenizer ({tokenizer_path})...")
+    tokenizer = Tokenizer.from_file(tokenizer_path)
     vocab_size = tokenizer.get_vocab_size()
 
     # Model configuration (from train.py)
@@ -30,12 +46,17 @@ def export_model():
         max_seq_len=max_seq_len,
     )
     model.load_state_dict(
-        torch.load("../tiny_llm.pth", map_location="cpu", weights_only=True)
+        torch.load(model_path, map_location="cpu", weights_only=True)
     )
     model.eval()
 
-    print("Exporting model to model.bin...")
-    with open("model.bin", "wb") as f:
+    if os.path.dirname(output_path):
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+    if os.path.dirname(vocab_path):
+        os.makedirs(os.path.dirname(vocab_path), exist_ok=True)
+
+    print(f"Exporting model to {output_path}...")
+    with open(output_path, "wb") as f:
         # Write header (256 bytes to leave room for future expansion)
         # struct format: 7 ints (dim, ffn_dim, n_layers, n_heads, n_kv_heads, vocab_size, max_seq_len)
         header = struct.pack(
@@ -65,18 +86,18 @@ def export_model():
         write_tensor(model.norm.weight)
         write_tensor(model.output.weight)
 
-    print("Exporting tokenizer to vocab.bin...")
+    print(f"Exporting tokenizer to {vocab_path}...")
     vocab = tokenizer.get_vocab()
     # Invert vocab map
     inv_vocab = {v: k for k, v in vocab.items()}
-    with open("vocab.bin", "wb") as f:
+    with open(vocab_path, "wb") as f:
         f.write(struct.pack("i", vocab_size))
         for i in range(vocab_size):
             token_str = inv_vocab.get(i, "").encode("utf-8")
             f.write(struct.pack("i", len(token_str)))
             f.write(token_str)
 
-    print("Done! You can now run `make` and execute the C code.")
+    print(f"Done! Saved {output_path} and {vocab_path}. You can now execute the C code.")
 
 
 if __name__ == "__main__":

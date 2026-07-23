@@ -23,11 +23,7 @@ except ImportError:
 # Ensure the local directory is in the path so we can import tinyllm
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-try:
-    from model import TinyLLM, apply_rotary_emb
-except ImportError:
-    st.error("Could not import `TinyLLM` from `model.py`. Please make sure `model.py` is in the same directory.")
-    st.stop()
+from tiny_llm.model import TinyLLM, apply_rotary_emb
 
 
 def get_device():
@@ -279,8 +275,10 @@ if 'ablation_mask' not in st.session_state:
 
 # Sidebar Configuration
 st.sidebar.header("📁 Model Configurations")
-model_file = st.sidebar.text_input("Model Weights Path", "tiny_llm.pth")
-tokenizer_file = st.sidebar.text_input("Tokenizer Path", "tokenizer.json")
+default_model_path = "checkpoints/tiny_llm.pth" if os.path.exists("checkpoints/tiny_llm.pth") else "tiny_llm.pth"
+default_tok_path = "checkpoints/tokenizer.json" if os.path.exists("checkpoints/tokenizer.json") else "tokenizer.json"
+model_file = st.sidebar.text_input("Model Weights Path", default_model_path)
+tokenizer_file = st.sidebar.text_input("Tokenizer Path", default_tok_path)
 
 st.sidebar.subheader("Architecture")
 dim = st.sidebar.number_input("Dimension (dim)", min_value=16, value=128)

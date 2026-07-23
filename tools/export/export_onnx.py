@@ -1,10 +1,14 @@
 import torch
 import os
 import argparse
-from model import TinyLLM
+from tiny_llm.model import TinyLLM
 from tokenizers import Tokenizer
 
-def export_to_onnx(model_path="tiny_llm.pth", tokenizer_path="tokenizer.json", output_path="tiny_llm.onnx", quantize=False):
+def export_to_onnx(model_path=None, tokenizer_path=None, output_path="tiny_llm.onnx", quantize=False):
+    if model_path is None:
+        model_path = "checkpoints/tiny_llm.pth" if os.path.exists("checkpoints/tiny_llm.pth") else "tiny_llm.pth"
+    if tokenizer_path is None:
+        tokenizer_path = "checkpoints/tokenizer.json" if os.path.exists("checkpoints/tokenizer.json") else "tokenizer.json"
     if not os.path.exists(model_path):
         print(f"Error: Model path '{model_path}' does not exist.")
         return
@@ -73,16 +77,16 @@ def export_to_onnx(model_path="tiny_llm.pth", tokenizer_path="tokenizer.json", o
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Export TinyLLM to ONNX format for Web deployment.")
-    parser.add_argument("--model", type=str, default="tiny_llm.pth", help="Path to the PyTorch model weights")
-    parser.add_argument("--tokenizer", type=str, default="tokenizer.json", help="Path to the Tokenizer JSON file")
+    parser.add_argument("--model-path", type=str, default=None, help="Path to input PyTorch model (.pth)")
+    parser.add_argument("--tokenizer-path", type=str, default=None, help="Path to input tokenizer (.json) file")
     parser.add_argument("--output", type=str, default="tiny_llm.onnx", help="Output path for the ONNX file")
     parser.add_argument("--quantize", action="store_true", help="Also generate an 8-bit quantized version of the ONNX model")
     
     args = parser.parse_args()
     
     export_to_onnx(
-        model_path=args.model,
-        tokenizer_path=args.tokenizer,
+        model_path=args.model_path,
+        tokenizer_path=args.tokenizer_path,
         output_path=args.output,
         quantize=args.quantize
     )

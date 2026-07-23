@@ -6,12 +6,26 @@ import sys
 # Add parent directory to path to import TinyLLM
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tokenizers import Tokenizer
-from model import TinyLLM
+from tiny_llm.model import TinyLLM
 
 
-def export_model_q8():
-    print("Loading model and tokenizer...")
-    tokenizer = Tokenizer.from_file("../tokenizer.json")
+def export_model_q8(model_path=None, tokenizer_path=None, output_path=None):
+    if output_path is None:
+        output_path = "model_q8.bin" if os.path.basename(os.getcwd()) == "c" else "c/model_q8.bin"
+
+    if model_path is None:
+        for p in ["checkpoints/tiny_llm.pth", "../checkpoints/tiny_llm.pth", "tiny_llm.pth", "../tiny_llm.pth"]:
+            if os.path.exists(p):
+                model_path = p
+                break
+    if tokenizer_path is None:
+        for p in ["checkpoints/tokenizer.json", "../checkpoints/tokenizer.json", "tokenizer.json", "../tokenizer.json"]:
+            if os.path.exists(p):
+                tokenizer_path = p
+                break
+
+    print(f"Loading model ({model_path}) and tokenizer ({tokenizer_path})...")
+    tokenizer = Tokenizer.from_file(tokenizer_path)
     vocab_size = tokenizer.get_vocab_size()
 
     # Model configuration (from train.py)
@@ -30,12 +44,15 @@ def export_model_q8():
         max_seq_len=max_seq_len,
     )
     model.load_state_dict(
-        torch.load("../tiny_llm.pth", map_location="cpu", weights_only=True)
+        torch.load(model_path, map_location="cpu", weights_only=True)
     )
     model.eval()
 
-    print("Exporting model to model_q8.bin...")
-    with open("model_q8.bin", "wb") as f:
+    if os.path.dirname(output_path):
+        os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    print(f"Exporting model to {output_path}...")
+    with open(output_path, "wb") as f:
         # Write header (256 bytes)
         # struct format: 8 ints (dim, ffn_dim, n_layers, n_heads, n_kv_heads, vocab_size, max_seq_len, is_quantized)
         header = struct.pack(
@@ -89,7 +106,7 @@ def export_model_q8():
         write_tensor_fp32(model.norm.weight)
         write_tensor_q8(model.output.weight)
 
-    print("Done! You can now run `make runq` and execute the quantized C code.")
+    print(f"Done! Saved {output_path}. You can now run `make runq` and execute the quantized C code.")
 
 
 if __name__ == "__main__":

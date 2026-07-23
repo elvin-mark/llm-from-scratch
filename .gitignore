@@ -5,5 +5,11 @@ tiny_llm.pth
 *.onnx.data
 
 __pycache__/
+*.egg-info/
+*.egg
+build/
+dist/
+.pytest_cache/
+.ruff_cache/
 
 .firebase

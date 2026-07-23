@@ -1,7 +1,7 @@
 import os
 import torch
 import pytest
-from data import SentencesDataset
+from tiny_llm.data import SentencesDataset
 
 def test_dataset_loader(tmp_path):
     """
@@ -15,8 +15,8 @@ def test_dataset_loader(tmp_path):
     corpus_file.write_text(corpus_content, encoding="utf-8")
     
     # We use the existing tokenizer.json in the repository
-    tokenizer_path = "tokenizer.json"
-    assert os.path.exists(tokenizer_path), "tokenizer.json must exist in the root folder for testing."
+    tokenizer_path = "checkpoints/tokenizer.json" if os.path.exists("checkpoints/tokenizer.json") else "tokenizer.json"
+    assert os.path.exists(tokenizer_path), "tokenizer.json must exist in checkpoints/ or root folder for testing."
     
     max_length = 16
     dataset = SentencesDataset(
