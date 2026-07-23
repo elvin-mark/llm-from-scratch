@@ -58,9 +58,9 @@ To run the model with 8-bit dynamic quantization:
 
 1. Export the model weights into the quantized binary format:
    ```bash
-   uv run python export_q8.py
+   uv run python tools/export/export_q8.py
    ```
-   This creates `model_q8.bin` in the current folder.
+   This creates `c/model_q8.bin`.
 
 2. Compile the quantized C code:
    ```bash
@@ -71,6 +71,25 @@ To run the model with 8-bit dynamic quantization:
    ```bash
    ./runq
    ```
+
+### 5. WebAssembly Inference (Emscripten / `emcc`)
+To compile the pure C engine into a standalone WebAssembly app using Emscripten:
+
+```bash
+# Compile run.c into run.html, run.js, and run.wasm
+make wasm
+
+# Compile quantized runq.c into runq.html, runq.js, and runq.wasm
+make wasmq
+
+# Bundle with preloaded model.bin & vocab.bin for instant in-browser C execution
+make wasm_bundle
+
+# Bundle with preloaded quantized model_q8.bin & vocab.bin
+make wasmq_bundle
+```
+
+Serve the resulting directory via HTTP (`python3 -m http.server 8000`) and open `run_bundle.html` in your browser!
 
 ---
 
