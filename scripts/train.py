@@ -9,9 +9,15 @@ from tiny_llm.model import TinyLLM
 
 def train(tokenizer_path: str = None, corpus_path: str = None):
     if tokenizer_path is None:
-        tokenizer_path = "checkpoints/tokenizer.json" if os.path.exists("checkpoints/tokenizer.json") else "tokenizer.json"
+        tokenizer_path = (
+            "checkpoints/tokenizer.json"
+            if os.path.exists("checkpoints/tokenizer.json")
+            else "tokenizer.json"
+        )
     if corpus_path is None:
-        corpus_path = "data/corpus.txt" if os.path.exists("data/corpus.txt") else "corpus.txt"
+        corpus_path = (
+            "data/corpus.txt" if os.path.exists("data/corpus.txt") else "corpus.txt"
+        )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     print("Using device:", device)

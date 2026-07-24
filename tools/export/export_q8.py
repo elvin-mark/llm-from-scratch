@@ -11,15 +11,27 @@ from tiny_llm.model import TinyLLM
 
 def export_model_q8(model_path=None, tokenizer_path=None, output_path=None):
     if output_path is None:
-        output_path = "model_q8.bin" if os.path.basename(os.getcwd()) == "c" else "c/model_q8.bin"
+        output_path = (
+            "model_q8.bin" if os.path.basename(os.getcwd()) == "c" else "c/model_q8.bin"
+        )
 
     if model_path is None:
-        for p in ["checkpoints/tiny_llm.pth", "../checkpoints/tiny_llm.pth", "tiny_llm.pth", "../tiny_llm.pth"]:
+        for p in [
+            "checkpoints/tiny_llm.pth",
+            "../checkpoints/tiny_llm.pth",
+            "tiny_llm.pth",
+            "../tiny_llm.pth",
+        ]:
             if os.path.exists(p):
                 model_path = p
                 break
     if tokenizer_path is None:
-        for p in ["checkpoints/tokenizer.json", "../checkpoints/tokenizer.json", "tokenizer.json", "../tokenizer.json"]:
+        for p in [
+            "checkpoints/tokenizer.json",
+            "../checkpoints/tokenizer.json",
+            "tokenizer.json",
+            "../tokenizer.json",
+        ]:
             if os.path.exists(p):
                 tokenizer_path = p
                 break
@@ -43,9 +55,7 @@ def export_model_q8(model_path=None, tokenizer_path=None, output_path=None):
         ffn_dim=ffn_dim,
         max_seq_len=max_seq_len,
     )
-    model.load_state_dict(
-        torch.load(model_path, map_location="cpu", weights_only=True)
-    )
+    model.load_state_dict(torch.load(model_path, map_location="cpu", weights_only=True))
     model.eval()
 
     if os.path.dirname(output_path):
@@ -106,7 +116,9 @@ def export_model_q8(model_path=None, tokenizer_path=None, output_path=None):
         write_tensor_fp32(model.norm.weight)
         write_tensor_q8(model.output.weight)
 
-    print(f"Done! Saved {output_path}. You can now run `make runq` and execute the quantized C code.")
+    print(
+        f"Done! Saved {output_path}. You can now run `make runq` and execute the quantized C code."
+    )
 
 
 if __name__ == "__main__":

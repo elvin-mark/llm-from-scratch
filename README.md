@@ -56,6 +56,7 @@ If you are interested in exactly how the mathematics and auto-regressive flows o
 - [Advanced Architecture (GQA & MoE)](docs/moe_gqa.md): Theoretical breakdown of Grouped Query Attention and Mixture-of-Experts routing.
 - [Educational FlashAttention](docs/flash_attention.md): Block-tiled online softmax algorithm for zero N x N matrix memory allocation.
 - [LoRA Fine-Tuning](docs/lora.md): Low-Rank Adaptation theory, rank decomposition, and weight merging mechanics.
+- [Sequence-Level Knowledge Distillation](docs/distillation.md): Transferring intelligence from 7B+ teacher LLMs (Qwen/DeepSeek) into TinyLLM.
 - [Mathematical Foundations](docs/math.md): The theoretical mathematical formulas defining the entire forward pass.
 - [Training Pipeline](docs/training.md): Overview of dataset ingestion, hyperparameter choices, and the CrossEntropy backward pass loop.
 - [Tokenizer Architecture](docs/tokenizer.md): Explanation of the Byte-Pair Encoding (BPE) training and inference algorithms.

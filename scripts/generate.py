@@ -28,9 +28,17 @@ def generate(
         num_sentences (int): Number of independent sentences to generate.
     """
     if tokenizer_path is None:
-        tokenizer_path = "checkpoints/tokenizer.json" if os.path.exists("checkpoints/tokenizer.json") else "tokenizer.json"
+        tokenizer_path = (
+            "checkpoints/tokenizer.json"
+            if os.path.exists("checkpoints/tokenizer.json")
+            else "tokenizer.json"
+        )
     if model_path is None:
-        model_path = "checkpoints/tiny_llm.pth" if os.path.exists("checkpoints/tiny_llm.pth") else "tiny_llm.pth"
+        model_path = (
+            "checkpoints/tiny_llm.pth"
+            if os.path.exists("checkpoints/tiny_llm.pth")
+            else "tiny_llm.pth"
+        )
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 

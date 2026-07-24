@@ -1,6 +1,12 @@
 import torch
-import pytest
-from tiny_llm import GroupedQueryAttention, MoERouter, MoEFeedForward, MoELLM, MoELLMConfig, precompute_freqs_cis
+from tiny_llm import (
+    GroupedQueryAttention,
+    MoERouter,
+    MoEFeedForward,
+    MoELLM,
+    MoELLMConfig,
+    precompute_freqs_cis,
+)
 
 
 def test_gqa_shapes():
@@ -49,7 +55,9 @@ def test_moe_feedforward():
     top_k = 2
     batch, seqlen = 2, 16
 
-    moe_ffn = MoEFeedForward(dim=dim, hidden_dim=hidden_dim, num_experts=num_experts, top_k=top_k)
+    moe_ffn = MoEFeedForward(
+        dim=dim, hidden_dim=hidden_dim, num_experts=num_experts, top_k=top_k
+    )
     moe_ffn.eval()
 
     x = torch.randn(batch, seqlen, dim)

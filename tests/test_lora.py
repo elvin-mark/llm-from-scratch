@@ -1,6 +1,5 @@
 import torch
 import torch.nn as nn
-import pytest
 from tiny_llm import TinyLLM, LoRALinear, inject_lora, merge_lora
 
 
@@ -14,23 +13,33 @@ def test_lora_step_zero_equivalence():
         out_base = base_linear(x)
         out_lora = lora_linear(x)
 
-    assert torch.allclose(out_base, out_lora, atol=1e-6), "Step 0 LoRALinear output must equal base linear layer."
+    assert torch.allclose(out_base, out_lora, atol=1e-6), (
+        "Step 0 LoRALinear output must equal base linear layer."
+    )
 
 
 def test_inject_lora_parameter_freezing():
     """Verify that inject_lora freezes base parameters and only enables gradients for LoRA A & B."""
     model = TinyLLM(vocab_size=100, dim=32, n_layers=2, n_heads=2, ffn_dim=64)
-    
+
     # Inject LoRA into wq and wv
     model = inject_lora(model, r=4, target_modules=("wq", "wv"))
 
     trainable_params = [name for name, p in model.named_parameters() if p.requires_grad]
-    frozen_params = [name for name, p in model.named_parameters() if not p.requires_grad]
+    frozen_params = [
+        name for name, p in model.named_parameters() if not p.requires_grad
+    ]
 
     assert len(trainable_params) > 0, "There should be trainable LoRA parameters."
-    assert all("lora_A" in p or "lora_B" in p for p in trainable_params), "Only lora_A and lora_B should be trainable."
-    assert any("tok_embeddings" in p for p in frozen_params), "Base embeddings should be frozen."
-    assert any("output" in p for p in frozen_params), "Base output projection should be frozen."
+    assert all("lora_A" in p or "lora_B" in p for p in trainable_params), (
+        "Only lora_A and lora_B should be trainable."
+    )
+    assert any("tok_embeddings" in p for p in frozen_params), (
+        "Base embeddings should be frozen."
+    )
+    assert any("output" in p for p in frozen_params), (
+        "Base output projection should be frozen."
+    )
 
 
 def test_merge_lora_equivalence():
@@ -56,4 +65,6 @@ def test_merge_lora_equivalence():
     with torch.no_grad():
         logits_merged = model_merged(dummy_input)
 
-    assert torch.allclose(logits_adapter, logits_merged, atol=1e-5), "Merged model logits must match LoRA adapter model."
+    assert torch.allclose(logits_adapter, logits_merged, atol=1e-5), (
+        "Merged model logits must match LoRA adapter model."
+    )

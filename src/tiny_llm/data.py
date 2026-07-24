@@ -8,7 +8,11 @@ from torch.utils.data import Dataset
 
 
 def prepare_and_train_tokenizer(
-    input_file: str, corpus_file: str, vocab_size: int = 4000, use_scratch_tokenizer: bool = False, tokenizer_out: str = "tokenizer.json"
+    input_file: str,
+    corpus_file: str,
+    vocab_size: int = 4000,
+    use_scratch_tokenizer: bool = False,
+    tokenizer_out: str = "tokenizer.json",
 ):
     """
     Extracts sentences from a TSV dataset and trains a custom BPE tokenizer.
@@ -43,35 +47,37 @@ def prepare_and_train_tokenizer(
     if use_scratch_tokenizer:
         from tiny_llm.tokenizer import ScratchTokenizer
         import json
-        
+
         with open(corpus_file, "r", encoding="utf-8") as f:
             text = f.read()
-            
+
         tokenizer_data = ScratchTokenizer.train(text, vocab_size=vocab_size)
-        
+
         with open(tokenizer_out, "w", encoding="utf-8") as f:
             json.dump(tokenizer_data, f, ensure_ascii=False, indent=2)
-            
-        print(f"Tokenizer trained with vocab size {len(tokenizer_data['model']['vocab'])} and saved to {tokenizer_out}")
+
+        print(
+            f"Tokenizer trained with vocab size {len(tokenizer_data['model']['vocab'])} and saved to {tokenizer_out}"
+        )
     else:
         # Step 2: Initialize BPE Tokenizer with an unknown token fallback
         tokenizer = Tokenizer(BPE(unk_token="[UNK]"))
-    
+
         # Pre-tokenize by splitting on whitespaces
         tokenizer.pre_tokenizer = Whitespace()
-    
+
         # Define special tokens required for model training and generation
         special_tokens = ["[UNK]", "[CLS]", "[SEP]", "[PAD]", "[MASK]"]
-    
+
         # Configure the BPE Trainer
         trainer = BpeTrainer(special_tokens=special_tokens, vocab_size=vocab_size)
-    
+
         # Train the tokenizer on our extracted corpus text file
         tokenizer.train(files=[corpus_file], trainer=trainer)
-    
+
         # Save the resulting tokenizer configuration
         tokenizer.save(tokenizer_out)
-    
+
         print(
             f"Tokenizer trained with vocab size {tokenizer.get_vocab_size()} and saved to {tokenizer_out}"
         )
@@ -87,7 +93,6 @@ class SentencesDataset(Dataset):
     def __init__(self, file_path, tokenizer_path, max_length=64):
         self.tokenizer = Tokenizer.from_file(tokenizer_path)
         # Enable truncation for tokenization
-        from tokenizers.processors import TemplateProcessing
 
         # We need to process the special tokens manually or with TemplateProcessing
         cls_id = self.tokenizer.token_to_id("[CLS]")
@@ -119,4 +124,3 @@ class SentencesDataset(Dataset):
         x = self.data[idx][:-1]
         y = self.data[idx][1:]
         return x, y
-

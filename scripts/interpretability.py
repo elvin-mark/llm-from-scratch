@@ -12,11 +12,15 @@ import numpy as np
 try:
     import plotly.express as px
     import plotly.graph_objects as go
+
     HAS_PLOTLY = True
 except ImportError:
     HAS_PLOTLY = False
     import matplotlib
-    matplotlib.use("Agg")  # Prevents segmentation faults on macOS by using a non-GUI backend
+
+    matplotlib.use(
+        "Agg"
+    )  # Prevents segmentation faults on macOS by using a non-GUI backend
     import matplotlib.pyplot as plt
     import seaborn as sns
 
@@ -34,7 +38,9 @@ def get_device():
     else:
         return torch.device("cpu")
 
+
 DEVICE = get_device()
+
 
 def get_causal_mask(seqlen, device):
     if seqlen > 1:
@@ -42,6 +48,7 @@ def get_causal_mask(seqlen, device):
         mask = torch.triu(mask, diagonal=1)
         return mask
     return None
+
 
 # -------------------------------------------------------------
 # 1. Custom Attention Wrapper to Capture Attention Maps & Ablation
@@ -81,7 +88,7 @@ class HookedAttention(nn.Module):
 
         # Apply head ablation: zero out attention weights for specific heads
         weights_modified = weights.clone()
-        ablation_mask = st.session_state.get('ablation_mask', {})
+        ablation_mask = st.session_state.get("ablation_mask", {})
         for head_idx in range(self.n_heads):
             if ablation_mask.get((self.layer_idx, head_idx), False):
                 # Zero attention weights for this head
@@ -90,6 +97,7 @@ class HookedAttention(nn.Module):
         output = torch.matmul(weights_modified, xv)
         output = output.transpose(1, 2).contiguous().view(bsz, seqlen, -1)
         return self.wo(output)
+
 
 # -------------------------------------------------------------
 # 2. Custom FeedForward Wrapper to Capture Neuron Activations (fMRI)
@@ -108,11 +116,14 @@ class HookedFeedForward(nn.Module):
         self.last_activations = acts.detach().cpu()
         return self.w2(acts)
 
+
 # -------------------------------------------------------------
 # 3. Model & Tokenizer Loader
 # -------------------------------------------------------------
 @st.cache_resource(show_spinner="Loading model and tokenizer...")
-def load_model_and_tokenizer(model_path, tokenizer_path, dim, n_layers, n_heads, ffn_dim, max_seq_len):
+def load_model_and_tokenizer(
+    model_path, tokenizer_path, dim, n_layers, n_heads, ffn_dim, max_seq_len
+):
     from tokenizers import Tokenizer
 
     tokenizer = Tokenizer.from_file(tokenizer_path)
@@ -139,6 +150,7 @@ def load_model_and_tokenizer(model_path, tokenizer_path, dim, n_layers, n_heads,
 
     model = model.to(DEVICE)
     return model, tokenizer
+
 
 # -------------------------------------------------------------
 # 4. Logit Lens & Attribution Computation Helper
@@ -201,6 +213,7 @@ def run_logit_lens_and_attribution(model, tokenizer, tokens):
 
     return layer_names, predictions, chosen_token_str, contribs
 
+
 # -------------------------------------------------------------
 # 5. Gradient-based Saliency Attribution
 # -------------------------------------------------------------
@@ -229,12 +242,15 @@ def run_gradient_saliency(model, tokenizer, tokens):
 
     grad_at_embeddings = embeddings_grad.grad
     if grad_at_embeddings is not None:
-        position_saliency = torch.norm(grad_at_embeddings[tokens[0]], dim=-1).cpu().numpy()
+        position_saliency = (
+            torch.norm(grad_at_embeddings[tokens[0]], dim=-1).cpu().numpy()
+        )
         max_val = position_saliency.max() + 1e-8
         normalized_saliency = position_saliency / max_val
         return normalized_saliency
     else:
         return np.ones(seqlen)
+
 
 # -------------------------------------------------------------
 # Streamlit Dashboard UI Configuration
@@ -270,13 +286,21 @@ st.markdown(
 st.title("🧠 TinyLLM Mechanistic Interpretability Dashboard")
 st.write("Explore how your trained TinyLLM model represents and processes language.")
 
-if 'ablation_mask' not in st.session_state:
+if "ablation_mask" not in st.session_state:
     st.session_state.ablation_mask = {}
 
 # Sidebar Configuration
 st.sidebar.header("📁 Model Configurations")
-default_model_path = "checkpoints/tiny_llm.pth" if os.path.exists("checkpoints/tiny_llm.pth") else "tiny_llm.pth"
-default_tok_path = "checkpoints/tokenizer.json" if os.path.exists("checkpoints/tokenizer.json") else "tokenizer.json"
+default_model_path = (
+    "checkpoints/tiny_llm.pth"
+    if os.path.exists("checkpoints/tiny_llm.pth")
+    else "tiny_llm.pth"
+)
+default_tok_path = (
+    "checkpoints/tokenizer.json"
+    if os.path.exists("checkpoints/tokenizer.json")
+    else "tokenizer.json"
+)
 model_file = st.sidebar.text_input("Model Weights Path", default_model_path)
 tokenizer_file = st.sidebar.text_input("Tokenizer Path", default_tok_path)
 
@@ -288,12 +312,18 @@ ffn_dim = st.sidebar.number_input("FFN Dim (ffn_dim)", min_value=16, value=512)
 max_seq_len = st.sidebar.number_input("Max Seq Length", min_value=16, value=64)
 
 if not os.path.exists(model_file) or not os.path.exists(tokenizer_file):
-    st.sidebar.error("⚠️ Model file or Tokenizer file not found. Please verify the absolute paths.")
+    st.sidebar.error(
+        "⚠️ Model file or Tokenizer file not found. Please verify the absolute paths."
+    )
     st.stop()
 else:
     try:
-        model, tokenizer = load_model_and_tokenizer(model_file, tokenizer_file, dim, n_layers, n_heads, ffn_dim, max_seq_len)
-        st.sidebar.success(f"✅ Model and Tokenizer loaded successfully on {DEVICE.type.upper()}!")
+        model, tokenizer = load_model_and_tokenizer(
+            model_file, tokenizer_file, dim, n_layers, n_heads, ffn_dim, max_seq_len
+        )
+        st.sidebar.success(
+            f"✅ Model and Tokenizer loaded successfully on {DEVICE.type.upper()}!"
+        )
     except Exception as e:
         st.sidebar.error(f"Failed to load model: {e}")
         st.stop()
@@ -301,14 +331,20 @@ else:
 # Head Ablation Settings on Sidebar
 st.sidebar.divider()
 st.sidebar.subheader("✂️ Attention Head Ablation")
-st.sidebar.write("Toggle specific heads to ablate (turn off) them inside the model dynamically during calculation.")
+st.sidebar.write(
+    "Toggle specific heads to ablate (turn off) them inside the model dynamically during calculation."
+)
 
 for l_i in range(n_layers):
     cols_heads = st.sidebar.columns(min(n_heads, 4))
     for h_i in range(n_heads):
         with cols_heads[h_i % 4]:
             key = f"L{l_i}H{h_i}"
-            is_checked = st.checkbox(key, value=st.session_state.ablation_mask.get((l_i, h_i), False), help=f"Ablate Layer {l_i} Head {h_i}")
+            is_checked = st.checkbox(
+                key,
+                value=st.session_state.ablation_mask.get((l_i, h_i), False),
+                help=f"Ablate Layer {l_i} Head {h_i}",
+            )
             st.session_state.ablation_mask[(l_i, h_i)] = is_checked
 
 # Tab Layout
@@ -324,6 +360,7 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs(
     ]
 )
 
+
 def validate_input_sequence(text):
     if not text.strip():
         st.warning("Please enter some text.")
@@ -335,19 +372,32 @@ def validate_input_sequence(text):
         return None, None
     tokens = [cls_id] + encoded.ids
     if len(tokens) > max_seq_len:
-        st.warning(f"Input is too long ({len(tokens)} tokens). Truncating to {max_seq_len} tokens.")
+        st.warning(
+            f"Input is too long ({len(tokens)} tokens). Truncating to {max_seq_len} tokens."
+        )
         tokens = tokens[:max_seq_len]
     return tokens, [tokenizer.id_to_token(t) for t in tokens]
 
+
 with tab1:
     st.header("Attention Maps Visualization")
-    st.write("Visualize the self-attention weights inside the transformer layers to see which words route information to each other.")
+    st.write(
+        "Visualize the self-attention weights inside the transformer layers to see which words route information to each other."
+    )
 
     col1, col2 = st.columns([1, 3])
     with col1:
-        test_sentence = st.text_input("Enter a sentence to analyze:", "오늘 날씨가 아주 좋습니다", key="tab1_input")
-        layer_selection = st.selectbox("Select Layer:", range(n_layers), index=n_layers-1, key="tab1_layer")
-        head_selection = st.selectbox("Select Attention Head:", range(n_heads), index=0, key="tab1_head")
+        test_sentence = st.text_input(
+            "Enter a sentence to analyze:",
+            "오늘 날씨가 아주 좋습니다",
+            key="tab1_input",
+        )
+        layer_selection = st.selectbox(
+            "Select Layer:", range(n_layers), index=n_layers - 1, key="tab1_layer"
+        )
+        head_selection = st.selectbox(
+            "Select Attention Head:", range(n_heads), index=0, key="tab1_head"
+        )
 
         tokens, token_strs = validate_input_sequence(test_sentence)
 
@@ -358,34 +408,55 @@ with tab1:
                 model(input_tensor)
 
             block = model.layers[layer_selection]
-            attn_matrix = block.attention.last_attention_weights[0, head_selection].numpy()
+            attn_matrix = block.attention.last_attention_weights[
+                0, head_selection
+            ].numpy()
 
             if HAS_PLOTLY:
-                fig = go.Figure(data=go.Heatmap(z=attn_matrix, x=token_strs, y=token_strs, colorscale="Cividis"))
+                fig = go.Figure(
+                    data=go.Heatmap(
+                        z=attn_matrix, x=token_strs, y=token_strs, colorscale="Cividis"
+                    )
+                )
                 fig.update_layout(
                     title=f"Attention Map (Layer {layer_selection}, Head {head_selection})",
                     xaxis_title="Key Tokens (Attended To)",
                     yaxis_title="Query Tokens (Attending)",
                     template="plotly_dark",
-                    width=700, height=550,
+                    width=700,
+                    height=550,
                 )
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 fig, ax = plt.subplots(figsize=(8, 6))
-                sns.heatmap(attn_matrix, xticklabels=token_strs, yticklabels=token_strs, cmap="cividis", annot=True, fmt=".2f", ax=ax)
+                sns.heatmap(
+                    attn_matrix,
+                    xticklabels=token_strs,
+                    yticklabels=token_strs,
+                    cmap="cividis",
+                    annot=True,
+                    fmt=".2f",
+                    ax=ax,
+                )
                 st.pyplot(fig)
 
 with tab2:
     st.header("The Logit Lens & Residual Attribution")
-    lens_sentence = st.text_input("Enter a sentence to pass through the lens:", "오늘 날씨가 아주 좋습니다", key="tab2_lens_input")
+    lens_sentence = st.text_input(
+        "Enter a sentence to pass through the lens:",
+        "오늘 날씨가 아주 좋습니다",
+        key="tab2_lens_input",
+    )
     lens_tokens, lens_token_strs = validate_input_sequence(lens_sentence)
 
     if lens_tokens:
         input_tensor = torch.tensor([lens_tokens], dtype=torch.long).to(DEVICE)
-        layer_names, predictions, final_token, attribs = run_logit_lens_and_attribution(model, tokenizer, input_tensor)
+        layer_names, predictions, final_token, attribs = run_logit_lens_and_attribution(
+            model, tokenizer, input_tensor
+        )
 
         st.subheader(f"1. Predictions Grid (Final Token Predicted: `{final_token}`)")
-        
+
         def render_logit_lens_html(layer_names, token_strs, predictions):
             html = "<div style='overflow-x: auto;'><table style='width:100%; border-collapse: collapse; color: white; background-color: #1F2937; min-width: 600px;'>"
             html += "<tr style='border-bottom: 2px solid #4F46E5;'>"
@@ -401,36 +472,56 @@ with tab2:
                     opacity = min(max(prob, 0.05), 1.0)
                     bg_color = f"rgba(79, 70, 229, {opacity})"
                     html += f"<td style='padding: 12px; text-align: center; background-color: {bg_color}; border: 1px solid #374151; min-width: 80px;'>"
-                    html += f"<div style='font-weight: bold; font-size: 14px;'>{word}</div>"
+                    html += (
+                        f"<div style='font-weight: bold; font-size: 14px;'>{word}</div>"
+                    )
                     html += f"<div style='font-size: 11px; opacity: 0.8;'>{prob * 100:.1f}%</div>"
                     html += "</td>"
                 html += "</tr>"
             html += "</table></div>"
             return html
 
-        st.markdown(render_logit_lens_html(layer_names, lens_token_strs, predictions), unsafe_allow_html=True)
+        st.markdown(
+            render_logit_lens_html(layer_names, lens_token_strs, predictions),
+            unsafe_allow_html=True,
+        )
 
         st.divider()
-        st.subheader(f"2. Layer-by-Layer Attribution for Predicted Token: `{final_token}`")
+        st.subheader(
+            f"2. Layer-by-Layer Attribution for Predicted Token: `{final_token}`"
+        )
         df_attribs = pd.DataFrame(attribs)
         col_chart, col_explain = st.columns([2, 1])
 
         with col_chart:
             if HAS_PLOTLY:
-                fig_waterfall = go.Figure(go.Waterfall(
-                    name="Attribution", orientation="v",
-                    measure=["relative"] * len(df_attribs),
-                    x=df_attribs["Layer"],
-                    textposition="outside",
-                    text=df_attribs["Delta Contribution (Logit Units)"].astype(str),
-                    y=df_attribs["Delta Contribution (Logit Units)"],
-                    connector={"line": {"color": "rgb(63, 63, 63)"}},
-                ))
-                fig_waterfall.update_layout(title=f"Logit Contribution Breakdown (Why did model choose '{final_token}'?)", template="plotly_dark", height=400)
+                fig_waterfall = go.Figure(
+                    go.Waterfall(
+                        name="Attribution",
+                        orientation="v",
+                        measure=["relative"] * len(df_attribs),
+                        x=df_attribs["Layer"],
+                        textposition="outside",
+                        text=df_attribs["Delta Contribution (Logit Units)"].astype(str),
+                        y=df_attribs["Delta Contribution (Logit Units)"],
+                        connector={"line": {"color": "rgb(63, 63, 63)"}},
+                    )
+                )
+                fig_waterfall.update_layout(
+                    title=f"Logit Contribution Breakdown (Why did model choose '{final_token}'?)",
+                    template="plotly_dark",
+                    height=400,
+                )
                 st.plotly_chart(fig_waterfall, use_container_width=True)
             else:
                 fig, ax = plt.subplots(figsize=(10, 4))
-                sns.barplot(data=df_attribs, x="Layer", y="Delta Contribution (Logit Units)", palette="coolwarm", ax=ax)
+                sns.barplot(
+                    data=df_attribs,
+                    x="Layer",
+                    y="Delta Contribution (Logit Units)",
+                    palette="coolwarm",
+                    ax=ax,
+                )
                 st.pyplot(fig)
 
         with col_explain:
@@ -438,7 +529,11 @@ with tab2:
 
 with tab3:
     st.header("🧠 LLM fMRI: Neuron Activation Firing")
-    fmri_sentence = st.text_input("Enter a sentence for fMRI scan:", "오늘 날씨가 아주 좋습니다", key="tab3_fmri_input")
+    fmri_sentence = st.text_input(
+        "Enter a sentence for fMRI scan:",
+        "오늘 날씨가 아주 좋습니다",
+        key="tab3_fmri_input",
+    )
     fmri_tokens, fmri_token_strs = validate_input_sequence(fmri_sentence)
 
     if fmri_tokens:
@@ -446,46 +541,111 @@ with tab3:
         with torch.no_grad():
             model(input_tensor)
 
-        fmri_layer_idx = st.selectbox("Select Layer for fMRI scan:", range(n_layers), index=min(2, n_layers-1), key="tab3_fmri_layer")
+        fmri_layer_idx = st.selectbox(
+            "Select Layer for fMRI scan:",
+            range(n_layers),
+            index=min(2, n_layers - 1),
+            key="tab3_fmri_layer",
+        )
         block = model.layers[fmri_layer_idx]
-        activations = block.feed_forward.last_activations[0].numpy()  # [seqlen, ffn_dim]
+        activations = block.feed_forward.last_activations[
+            0
+        ].numpy()  # [seqlen, ffn_dim]
 
-        num_neurons_to_show = st.slider("Number of active neurons to display:", 10, min(100, ffn_dim), min(30, ffn_dim))
+        num_neurons_to_show = st.slider(
+            "Number of active neurons to display:",
+            10,
+            min(100, ffn_dim),
+            min(30, ffn_dim),
+        )
         peak_activations = activations.max(axis=0)
         top_neuron_indices = np.argsort(peak_activations)[::-1][:num_neurons_to_show]
         filtered_activations = activations[:, top_neuron_indices].T
         neuron_labels = [f"Neuron {idx}" for idx in top_neuron_indices]
 
         if HAS_PLOTLY:
-            fig_fmri = go.Figure(data=go.Heatmap(z=filtered_activations, x=fmri_token_strs, y=neuron_labels, colorscale="Hot"))
-            fig_fmri.update_layout(title=f"fMRI Brain Scan of FFN layer {fmri_layer_idx} (Top {num_neurons_to_show} Neurons)", template="plotly_dark", height=200 + num_neurons_to_show * 15)
+            fig_fmri = go.Figure(
+                data=go.Heatmap(
+                    z=filtered_activations,
+                    x=fmri_token_strs,
+                    y=neuron_labels,
+                    colorscale="Hot",
+                )
+            )
+            fig_fmri.update_layout(
+                title=f"fMRI Brain Scan of FFN layer {fmri_layer_idx} (Top {num_neurons_to_show} Neurons)",
+                template="plotly_dark",
+                height=200 + num_neurons_to_show * 15,
+            )
             st.plotly_chart(fig_fmri, use_container_width=True)
         else:
             fig, ax = plt.subplots(figsize=(10, 6))
-            sns.heatmap(filtered_activations, xticklabels=fmri_token_strs, yticklabels=neuron_labels, cmap="hot", ax=ax)
+            sns.heatmap(
+                filtered_activations,
+                xticklabels=fmri_token_strs,
+                yticklabels=neuron_labels,
+                cmap="hot",
+                ax=ax,
+            )
             st.pyplot(fig)
 
         col_tok, col_neu = st.columns(2)
         with col_tok:
-            selected_token = st.selectbox("Select Word:", fmri_token_strs, index=min(1, len(fmri_token_strs) - 1))
+            selected_token = st.selectbox(
+                "Select Word:", fmri_token_strs, index=min(1, len(fmri_token_strs) - 1)
+            )
             token_pos = fmri_token_strs.index(selected_token)
             token_acts = activations[token_pos]
             top_token_neurons = np.argsort(token_acts)[::-1][:10]
-            df_tok_neu = pd.DataFrame({"Neuron": [f"Neuron #{idx}" for idx in top_token_neurons], "Activation Value": np.round(token_acts[top_token_neurons], 3)})
-            
+            df_tok_neu = pd.DataFrame(
+                {
+                    "Neuron": [f"Neuron #{idx}" for idx in top_token_neurons],
+                    "Activation Value": np.round(token_acts[top_token_neurons], 3),
+                }
+            )
+
             if HAS_PLOTLY:
-                fig_tok_neu = px.bar(df_tok_neu, x="Activation Value", y="Neuron", orientation="h", title=f"Top 10 Neurons Firing for '{selected_token}'", color="Activation Value", color_continuous_scale="Reds")
-                fig_tok_neu.update_layout(yaxis={"categoryorder": "total ascending"}, template="plotly_dark", height=300)
+                fig_tok_neu = px.bar(
+                    df_tok_neu,
+                    x="Activation Value",
+                    y="Neuron",
+                    orientation="h",
+                    title=f"Top 10 Neurons Firing for '{selected_token}'",
+                    color="Activation Value",
+                    color_continuous_scale="Reds",
+                )
+                fig_tok_neu.update_layout(
+                    yaxis={"categoryorder": "total ascending"},
+                    template="plotly_dark",
+                    height=300,
+                )
                 st.plotly_chart(fig_tok_neu, use_container_width=True)
             else:
                 st.dataframe(df_tok_neu)
 
         with col_neu:
-            neuron_id = st.number_input(f"Enter Neuron ID (0 to {ffn_dim-1}):", min_value=0, max_value=ffn_dim-1, value=int(top_neuron_indices[0]))
-            df_neu_acts = pd.DataFrame({"Token": fmri_token_strs, "Activation Firing": np.round(activations[:, neuron_id], 3)})
-            
+            neuron_id = st.number_input(
+                f"Enter Neuron ID (0 to {ffn_dim - 1}):",
+                min_value=0,
+                max_value=ffn_dim - 1,
+                value=int(top_neuron_indices[0]),
+            )
+            df_neu_acts = pd.DataFrame(
+                {
+                    "Token": fmri_token_strs,
+                    "Activation Firing": np.round(activations[:, neuron_id], 3),
+                }
+            )
+
             if HAS_PLOTLY:
-                fig_neu_acts = px.bar(df_neu_acts, x="Token", y="Activation Firing", title=f"Neuron #{neuron_id} Firing Pattern Across Sentence", color="Activation Firing", color_continuous_scale="Oranges")
+                fig_neu_acts = px.bar(
+                    df_neu_acts,
+                    x="Token",
+                    y="Activation Firing",
+                    title=f"Neuron #{neuron_id} Firing Pattern Across Sentence",
+                    color="Activation Firing",
+                    color_continuous_scale="Oranges",
+                )
                 fig_neu_acts.update_layout(template="plotly_dark", height=300)
                 st.plotly_chart(fig_neu_acts, use_container_width=True)
             else:
@@ -493,7 +653,9 @@ with tab3:
 
 with tab4:
     st.header("Causal Word Saliency Mapping")
-    saliency_sentence = st.text_input("Enter a sentence to analyze:", "오늘 날씨가 아주 좋습니다", key="tab4_input")
+    saliency_sentence = st.text_input(
+        "Enter a sentence to analyze:", "오늘 날씨가 아주 좋습니다", key="tab4_input"
+    )
     saliency_tokens, saliency_token_strs = validate_input_sequence(saliency_sentence)
 
     if saliency_tokens:
@@ -516,7 +678,7 @@ with tab4:
 
 with tab5:
     st.header("Next-Token Predictability & Entropy Profile")
-    if 'tokens' in locals() and tokens: # Use tokens from tab1 or re-evaluate
+    if "tokens" in locals() and tokens:  # Use tokens from tab1 or re-evaluate
         input_tensor = torch.tensor([tokens], dtype=torch.long).to(DEVICE)
         with torch.no_grad():
             logits = model(input_tensor)
@@ -529,26 +691,46 @@ with tab5:
             next_token = token_strs[idx + 1]
             next_token_id = tokens[idx + 1]
             confidence = probs[idx, next_token_id].item()
-            analysis_data.append({"Position": idx, "Context Word": token, "Predicted Word": next_token, "Surprisal (Entropy in bits)": round(entropy[idx], 2), "Confidence Probability (%)": round(confidence * 100, 2)})
+            analysis_data.append(
+                {
+                    "Position": idx,
+                    "Context Word": token,
+                    "Predicted Word": next_token,
+                    "Surprisal (Entropy in bits)": round(entropy[idx], 2),
+                    "Confidence Probability (%)": round(confidence * 100, 2),
+                }
+            )
 
         df_analysis = pd.DataFrame(analysis_data)
         col1, col2 = st.columns([2, 1])
 
         with col1:
             if HAS_PLOTLY:
-                fig = px.line(df_analysis, x="Context Word", y="Surprisal (Entropy in bits)", markers=True, title="Uncertainty (Entropy) Profile across the Sentence")
+                fig = px.line(
+                    df_analysis,
+                    x="Context Word",
+                    y="Surprisal (Entropy in bits)",
+                    markers=True,
+                    title="Uncertainty (Entropy) Profile across the Sentence",
+                )
                 fig.update_layout(template="plotly_dark")
                 st.plotly_chart(fig, use_container_width=True)
             else:
                 fig, ax = plt.subplots(figsize=(10, 4))
-                sns.lineplot(data=df_analysis, x="Context Word", y="Surprisal (Entropy in bits)", marker="o", ax=ax)
+                sns.lineplot(
+                    data=df_analysis,
+                    x="Context Word",
+                    y="Surprisal (Entropy in bits)",
+                    marker="o",
+                    ax=ax,
+                )
                 st.pyplot(fig)
         with col2:
             st.dataframe(df_analysis, use_container_width=True)
 
 with tab6:
     st.header("Interactive Generation & Decoding Steering")
-    cls_id = tokenizer.token_to_id("[CLS]") if 'tokenizer' in locals() else 0
+    cls_id = tokenizer.token_to_id("[CLS]") if "tokenizer" in locals() else 0
     if "gen_token_ids" not in st.session_state:
         st.session_state.gen_token_ids = [cls_id]
 
@@ -557,13 +739,15 @@ with tab6:
         temperature = st.slider("Temperature:", 0.1, 2.0, 0.8, step=0.1)
         top_k_val = st.slider("Top-K:", 1, 100, 50, step=1)
         custom_prompt = st.text_input("Reset with custom prompt:", "")
-        
+
         col_btn1, col_btn2 = st.columns(2)
         with col_btn1:
             if st.button("Apply Prompt & Reset"):
                 if custom_prompt.strip():
                     encoded = tokenizer.encode(custom_prompt)
-                    ids = encoded.ids[:max_seq_len-1] # ensure it doesn't exceed limit
+                    ids = encoded.ids[
+                        : max_seq_len - 1
+                    ]  # ensure it doesn't exceed limit
                     st.session_state.gen_token_ids = [cls_id] + ids
                 else:
                     st.session_state.gen_token_ids = [cls_id]
@@ -577,71 +761,105 @@ with tab6:
             if len(st.session_state.gen_token_ids) >= max_seq_len:
                 st.warning("Maximum sequence length reached.")
             else:
-                current_ids = torch.tensor([st.session_state.gen_token_ids], dtype=torch.long).to(DEVICE)
+                current_ids = torch.tensor(
+                    [st.session_state.gen_token_ids], dtype=torch.long
+                ).to(DEVICE)
                 with torch.no_grad():
                     logits = model(current_ids)
                     next_token_logits = logits[0, -1, :] / temperature
                     if top_k_val > 0:
-                        top_k_threshold = torch.topk(next_token_logits, top_k_val)[0][-1]
-                        next_token_logits[next_token_logits < top_k_threshold] = float("-inf")
+                        top_k_threshold = torch.topk(next_token_logits, top_k_val)[0][
+                            -1
+                        ]
+                        next_token_logits[next_token_logits < top_k_threshold] = float(
+                            "-inf"
+                        )
                     probs = F.softmax(next_token_logits, dim=-1)
                     next_token = torch.multinomial(probs, num_samples=1).item()
                     st.session_state.gen_token_ids.append(next_token)
                     st.rerun()
 
     with col2:
-        token_strs_gen = [tokenizer.id_to_token(tid) for tid in st.session_state.gen_token_ids]
+        token_strs_gen = [
+            tokenizer.id_to_token(tid) for tid in st.session_state.gen_token_ids
+        ]
         decoded_text = tokenizer.decode(st.session_state.gen_token_ids[1:])
         st.markdown(f"**Raw Tokens sequence:** `{' | '.join(token_strs_gen)}`")
-        st.success(f"**Generated Text:** {decoded_text if decoded_text else '[Empty - start generating!]'}")
-        
+        st.success(
+            f"**Generated Text:** {decoded_text if decoded_text else '[Empty - start generating!]'}"
+        )
+
         st.divider()
         if len(st.session_state.gen_token_ids) < max_seq_len:
-            current_ids = torch.tensor([st.session_state.gen_token_ids], dtype=torch.long).to(DEVICE)
+            current_ids = torch.tensor(
+                [st.session_state.gen_token_ids], dtype=torch.long
+            ).to(DEVICE)
             with torch.no_grad():
                 logits = model(current_ids)
                 next_token_logits = logits[0, -1, :]
             probs = F.softmax(next_token_logits, dim=-1)
             top_probs, top_ids = torch.topk(probs, k=5)
-            
-            candidates_data = [{"Token": tokenizer.id_to_token(tid.item()), "Token ID": tid.item(), "Probability (%)": round(prob.item() * 100, 2)} for tid, prob in zip(top_ids, top_probs)]
+
+            candidates_data = [
+                {
+                    "Token": tokenizer.id_to_token(tid.item()),
+                    "Token ID": tid.item(),
+                    "Probability (%)": round(prob.item() * 100, 2),
+                }
+                for tid, prob in zip(top_ids, top_probs)
+            ]
             df_candidates = pd.DataFrame(candidates_data)
-            
+
             cols_candidates = st.columns(5)
             for i, cand in enumerate(candidates_data):
                 with cols_candidates[i]:
-                    if st.button(f"{cand['Token']}\n({cand['Probability (%)']}%)", key=f"cand_{cand['Token ID']}_{i}"):
-                        st.session_state.gen_token_ids.append(cand['Token ID'])
+                    if st.button(
+                        f"{cand['Token']}\n({cand['Probability (%)']}%)",
+                        key=f"cand_{cand['Token ID']}_{i}",
+                    ):
+                        st.session_state.gen_token_ids.append(cand["Token ID"])
                         st.rerun()
 
             if HAS_PLOTLY:
-                fig_candidates = px.bar(df_candidates, x="Probability (%)", y="Token", orientation="h", color="Probability (%)", color_continuous_scale="Purples")
-                fig_candidates.update_layout(yaxis={"categoryorder": "total ascending"}, template="plotly_dark", height=250)
+                fig_candidates = px.bar(
+                    df_candidates,
+                    x="Probability (%)",
+                    y="Token",
+                    orientation="h",
+                    color="Probability (%)",
+                    color_continuous_scale="Purples",
+                )
+                fig_candidates.update_layout(
+                    yaxis={"categoryorder": "total ascending"},
+                    template="plotly_dark",
+                    height=250,
+                )
                 st.plotly_chart(fig_candidates, use_container_width=True)
         else:
-            st.info("Maximum sequence length reached. Please reset to continue generating.")
+            st.info(
+                "Maximum sequence length reached. Please reset to continue generating."
+            )
 
 with tab7:
     st.header("📈 Weight Distributions & Parameter Heatmaps")
-    st.write("Inspect the trained weight matrices of the model. You can view their value distributions (histograms), matrix shapes, summary statistics, and 2D spatial weight patterns.")
+    st.write(
+        "Inspect the trained weight matrices of the model. You can view their value distributions (histograms), matrix shapes, summary statistics, and 2D spatial weight patterns."
+    )
 
     # 1. Selection interface
     col_sel1, col_sel2, col_sel3 = st.columns(3)
-    
+
     with col_sel1:
         category = st.selectbox(
             "Select Weight Category:",
             ["Layer Weight Matrices", "Global Weight Matrices"],
-            key="tab7_category"
+            key="tab7_category",
         )
-        
+
     if category == "Layer Weight Matrices":
         with col_sel2:
             layer_idx = st.selectbox(
-                "Select Layer:",
-                range(n_layers),
-                index=0,
-                key="tab7_layer_idx"
+                "Select Layer:", range(n_layers), index=0, key="tab7_layer_idx"
             )
         with col_sel3:
             tensor_name = st.selectbox(
@@ -653,11 +871,11 @@ with tab7:
                     "attention.wo.weight",
                     "feed_forward.w1.weight",
                     "feed_forward.w2.weight",
-                    "feed_forward.w3.weight"
+                    "feed_forward.w3.weight",
                 ],
-                key="tab7_layer_tensor"
+                key="tab7_layer_tensor",
             )
-            
+
         # Extract the tensor
         block = model.layers[layer_idx]
         if tensor_name == "attention.wq.weight":
@@ -674,39 +892,44 @@ with tab7:
             selected_param = block.feed_forward.w2.weight
         elif tensor_name == "feed_forward.w3.weight":
             selected_param = block.feed_forward.w3.weight
-            
-    else: # Global Weight Matrices
+
+    else:  # Global Weight Matrices
         with col_sel2:
             tensor_name = st.selectbox(
                 "Select Global Tensor:",
                 ["tok_embeddings.weight", "output.weight"],
-                key="tab7_global_tensor"
+                key="tab7_global_tensor",
             )
         # Extract the tensor
         if tensor_name == "tok_embeddings.weight":
             selected_param = model.tok_embeddings.weight
         else:
             selected_param = model.output.weight
-            
+
     # Extract tensor data as NumPy
     param_tensor = selected_param.detach().cpu().numpy()
-    
+
     # 2. Display metadata and statistics
     st.markdown(f"### `{tensor_name}` (Shape: `{param_tensor.shape}`) Details")
-    
+
     # Calculate statistics
     mean_val = np.mean(param_tensor)
     std_val = np.std(param_tensor)
     min_val = np.min(param_tensor)
     max_val = np.max(param_tensor)
-    
+
     # Sparsity threshold config
     col_stat1, col_stat2 = st.columns([1, 4])
     with col_stat1:
-        sparsity_threshold = st.number_input("Sparsity threshold (|w| < epsilon):", value=1e-3, format="%.1e", key="tab7_sparsity_thresh")
-    
+        sparsity_threshold = st.number_input(
+            "Sparsity threshold (|w| < epsilon):",
+            value=1e-3,
+            format="%.1e",
+            key="tab7_sparsity_thresh",
+        )
+
     sparsity_pct = (np.abs(param_tensor) < sparsity_threshold).mean() * 100
-    
+
     # Render stats row
     col_m1, col_m2, col_m3, col_m4, col_m5 = st.columns(5)
     col_m1.metric("Mean", f"{mean_val:.5f}")
@@ -714,77 +937,88 @@ with tab7:
     col_m3.metric("Min", f"{min_val:.5f}")
     col_m4.metric("Max", f"{max_val:.5f}")
     col_m5.metric("Sparsity (%)", f"{sparsity_pct:.2f}%")
-    
+
     st.divider()
-    
+
     # 3. Visualizations
     col_vis1, col_vis2 = st.columns(2)
-    
+
     # Histogram of distributions
     with col_vis1:
         st.subheader("📊 Weight Value Distribution")
         flat_weights = param_tensor.flatten()
-        
+
         # Downsample large tensors to keep UI highly responsive
         if len(flat_weights) > 100000:
-            flat_weights_display = np.random.choice(flat_weights, size=100000, replace=False)
-            st.info(f"Showing a random sample of 100,000 weights (out of {len(flat_weights):,}) for rendering performance.")
+            flat_weights_display = np.random.choice(
+                flat_weights, size=100000, replace=False
+            )
+            st.info(
+                f"Showing a random sample of 100,000 weights (out of {len(flat_weights):,}) for rendering performance."
+            )
         else:
             flat_weights_display = flat_weights
-            
+
         if HAS_PLOTLY:
             fig_hist = px.histogram(
                 x=flat_weights_display,
-                labels={'x': 'Weight Value'},
+                labels={"x": "Weight Value"},
                 title=f"Histogram of {tensor_name}",
-                color_discrete_sequence=['#818CF8']
+                color_discrete_sequence=["#818CF8"],
             )
             fig_hist.update_layout(template="plotly_dark", showlegend=False, height=400)
             st.plotly_chart(fig_hist, use_container_width=True)
         else:
             fig, ax = plt.subplots(figsize=(6, 4))
-            sns.histplot(flat_weights_display, color='#818CF8', kde=True, ax=ax)
+            sns.histplot(flat_weights_display, color="#818CF8", kde=True, ax=ax)
             ax.set_title(f"Histogram of {tensor_name}")
             ax.set_xlabel("Weight Value")
             st.pyplot(fig)
-            
+
     # 2D Heatmap of weights
     with col_vis2:
         st.subheader("🗺️ 2D Weight Matrix Heatmap")
-        
+
         slice_matrix = False
         max_rows = 200
         max_cols = 200
-        
+
         if param_tensor.ndim == 2:
             num_rows, num_cols = param_tensor.shape
             if num_rows > max_rows or num_cols > max_cols:
                 slice_matrix = st.checkbox(
                     f"Crop visualization to first {max_rows}x{max_cols} elements (Highly recommended for speed)",
                     value=True,
-                    key="tab7_slice_chk"
+                    key="tab7_slice_chk",
                 )
-                
+
             if slice_matrix:
                 display_matrix = param_tensor[:max_rows, :max_cols]
-                st.write(f"Showing cropped slice of shape `{display_matrix.shape}` from original `{param_tensor.shape}`")
+                st.write(
+                    f"Showing cropped slice of shape `{display_matrix.shape}` from original `{param_tensor.shape}`"
+                )
             else:
                 display_matrix = param_tensor
-                
+
             if HAS_PLOTLY:
                 abs_max = float(np.max(np.abs(display_matrix)))
                 fig_heat = px.imshow(
                     display_matrix,
                     color_continuous_scale="RdBu",
                     range_color=[-abs_max, abs_max],
-                    title=f"Heatmap of {tensor_name}" + (" (Cropped)" if slice_matrix else "")
+                    title=f"Heatmap of {tensor_name}"
+                    + (" (Cropped)" if slice_matrix else ""),
                 )
                 fig_heat.update_layout(template="plotly_dark", height=400)
                 st.plotly_chart(fig_heat, use_container_width=True)
             else:
                 fig, ax = plt.subplots(figsize=(6, 4))
                 sns.heatmap(display_matrix, cmap="RdBu", center=0.0, ax=ax)
-                ax.set_title(f"Heatmap of {tensor_name}" + (" (Cropped)" if slice_matrix else ""))
+                ax.set_title(
+                    f"Heatmap of {tensor_name}" + (" (Cropped)" if slice_matrix else "")
+                )
                 st.pyplot(fig)
         else:
-            st.warning("Heatmap is only available for 2D weight matrices (linear and embedding layers).")
+            st.warning(
+                "Heatmap is only available for 2D weight matrices (linear and embedding layers)."
+            )

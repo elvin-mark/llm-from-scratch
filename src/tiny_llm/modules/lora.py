@@ -6,7 +6,7 @@ import torch.nn as nn
 class LoRALinear(nn.Module):
     """
     Wraps an existing nn.Linear layer to add trainable low-rank A and B matrices (Hu et al.).
-    
+
     Formula:
         h = W_0 * x + (alpha / r) * (x @ A^T) @ B^T
     """
@@ -45,7 +45,10 @@ class LoRALinear(nn.Module):
         """
         Merges low-rank weights (W_0 + (alpha/r) * B @ A) into a single nn.Linear.
         """
-        merged_weight = self.base_linear.weight.data + (self.lora_B.data @ self.lora_A.data) * self.scaling
+        merged_weight = (
+            self.base_linear.weight.data
+            + (self.lora_B.data @ self.lora_A.data) * self.scaling
+        )
         merged_linear = nn.Linear(
             self.base_linear.in_features,
             self.base_linear.out_features,
@@ -74,8 +77,14 @@ def inject_lora(
         for attr in target_modules:
             if hasattr(module, attr):
                 target_layer = getattr(module, attr)
-                if isinstance(target_layer, nn.Linear) and not isinstance(target_layer, LoRALinear):
-                    setattr(module, attr, LoRALinear(target_layer, r=r, lora_alpha=lora_alpha))
+                if isinstance(target_layer, nn.Linear) and not isinstance(
+                    target_layer, LoRALinear
+                ):
+                    setattr(
+                        module,
+                        attr,
+                        LoRALinear(target_layer, r=r, lora_alpha=lora_alpha),
+                    )
     return model
 
 

@@ -1,6 +1,5 @@
 import json
 import tempfile
-import pytest
 from tiny_llm import ScratchTokenizer
 
 
@@ -17,7 +16,9 @@ def test_scratch_tokenizer_training_and_serialization():
     assert len(tokenizer_data["model"]["vocab"]) <= 50
 
     # Save to temp file and load via ScratchTokenizer.from_file
-    with tempfile.NamedTemporaryFile("w+", suffix=".json", encoding="utf-8", delete=False) as f:
+    with tempfile.NamedTemporaryFile(
+        "w+", suffix=".json", encoding="utf-8", delete=False
+    ) as f:
         json.dump(tokenizer_data, f, ensure_ascii=False)
         temp_path = f.name
 
@@ -33,7 +34,9 @@ def test_scratch_tokenizer_encode_decode():
     corpus = "톰은 메리가 우는 것을 보았다."
     tokenizer_data = ScratchTokenizer.train(corpus, vocab_size=60)
 
-    with tempfile.NamedTemporaryFile("w+", suffix=".json", encoding="utf-8", delete=False) as f:
+    with tempfile.NamedTemporaryFile(
+        "w+", suffix=".json", encoding="utf-8", delete=False
+    ) as f:
         json.dump(tokenizer_data, f, ensure_ascii=False)
         temp_path = f.name
 

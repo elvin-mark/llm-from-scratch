@@ -1,5 +1,4 @@
 import torch
-import pytest
 from tiny_llm import Attention, EducationalFlashAttention, precompute_freqs_cis
 
 
@@ -15,7 +14,9 @@ def test_flash_attention_exact_match():
     block_size = 8
 
     standard_attn = Attention(dim=dim, n_heads=n_heads)
-    flash_attn = EducationalFlashAttention(dim=dim, n_heads=n_heads, block_size=block_size)
+    flash_attn = EducationalFlashAttention(
+        dim=dim, n_heads=n_heads, block_size=block_size
+    )
 
     # Copy identical weights from standard to flash attention
     flash_attn.wq.weight.data.copy_(standard_attn.wq.weight.data)
@@ -35,7 +36,9 @@ def test_flash_attention_exact_match():
         out_standard = standard_attn(x, freqs_cis)
         out_flash = flash_attn(x, freqs_cis)
 
-    assert torch.allclose(out_standard, out_flash, atol=1e-5), "FlashAttention output does not match standard Attention (no mask)"
+    assert torch.allclose(out_standard, out_flash, atol=1e-5), (
+        "FlashAttention output does not match standard Attention (no mask)"
+    )
 
 
 def test_flash_attention_causal_mask_match():
@@ -49,7 +52,9 @@ def test_flash_attention_causal_mask_match():
     block_size = 8
 
     standard_attn = Attention(dim=dim, n_heads=n_heads)
-    flash_attn = EducationalFlashAttention(dim=dim, n_heads=n_heads, block_size=block_size)
+    flash_attn = EducationalFlashAttention(
+        dim=dim, n_heads=n_heads, block_size=block_size
+    )
 
     # Copy weights
     flash_attn.wq.weight.data.copy_(standard_attn.wq.weight.data)
@@ -69,4 +74,6 @@ def test_flash_attention_causal_mask_match():
         out_standard = standard_attn(x, freqs_cis, mask)
         out_flash = flash_attn(x, freqs_cis, mask)
 
-    assert torch.allclose(out_standard, out_flash, atol=1e-5), "FlashAttention output does not match standard Attention (with causal mask)"
+    assert torch.allclose(out_standard, out_flash, atol=1e-5), (
+        "FlashAttention output does not match standard Attention (with causal mask)"
+    )

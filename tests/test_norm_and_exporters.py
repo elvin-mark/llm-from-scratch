@@ -1,11 +1,9 @@
 import struct
 import tempfile
 import torch
-import pytest
 
 from tiny_llm import RMSNorm
 from tools.export.export_c import export_model
-from tools.export.export_q8 import export_model_q8
 
 
 def test_rmsnorm_scale_invariance():
@@ -28,7 +26,6 @@ def test_rmsnorm_scale_invariance():
 
 def test_export_c_binary_header_format():
     """Verify that export_c writes the 256-byte header with correct struct packing."""
-    vocab_size = 100
     dim = 128
     n_layers = 4
     n_heads = 4
@@ -36,19 +33,32 @@ def test_export_c_binary_header_format():
     max_seq_len = 64
 
     # Create dummy model checkpoint and tokenizer file
-    with tempfile.NamedTemporaryFile("wb", suffix=".pth", delete=False) as model_f, \
-         tempfile.NamedTemporaryFile("w+", suffix=".json", encoding="utf-8", delete=False) as tok_f, \
-         tempfile.NamedTemporaryFile("wb", suffix=".bin", delete=False) as out_model_f, \
-         tempfile.NamedTemporaryFile("wb", suffix=".bin", delete=False) as out_vocab_f:
-
+    with (
+        tempfile.NamedTemporaryFile("wb", suffix=".pth", delete=False) as model_f,
+        tempfile.NamedTemporaryFile(
+            "w+", suffix=".json", encoding="utf-8", delete=False
+        ) as tok_f,
+        tempfile.NamedTemporaryFile("wb", suffix=".bin", delete=False) as out_model_f,
+        tempfile.NamedTemporaryFile("wb", suffix=".bin", delete=False) as out_vocab_f,
+    ):
         from tiny_llm import TinyLLM, ScratchTokenizer
 
-        tokenizer_data = ScratchTokenizer.train("dummy text for export test", vocab_size=50)
+        tokenizer_data = ScratchTokenizer.train(
+            "dummy text for export test", vocab_size=50
+        )
         actual_vocab_size = len(tokenizer_data["model"]["vocab"])
 
-        model = TinyLLM(vocab_size=actual_vocab_size, dim=dim, n_layers=n_layers, n_heads=n_heads, ffn_dim=ffn_dim, max_seq_len=max_seq_len)
+        model = TinyLLM(
+            vocab_size=actual_vocab_size,
+            dim=dim,
+            n_layers=n_layers,
+            n_heads=n_heads,
+            ffn_dim=ffn_dim,
+            max_seq_len=max_seq_len,
+        )
         torch.save(model.state_dict(), model_f.name)
         import json
+
         json.dump(tokenizer_data, tok_f, ensure_ascii=False)
         tok_f.flush()
 

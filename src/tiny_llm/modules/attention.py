@@ -201,4 +201,3 @@ class EducationalFlashAttention(nn.Module):
 
         output = output.transpose(1, 2).contiguous().view(bsz, seqlen, -1)
         return self.wo(output)
-
