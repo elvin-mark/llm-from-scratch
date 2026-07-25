@@ -247,6 +247,9 @@ uv run python experiments/bench_quant.py
 
 # 6. Float32 vs. 1.58-Bit BitNet Zero-Multiplication & Memory Benchmark
 uv run python experiments/bench_bitnet.py
+
+# 7. Deep & Narrow vs. Shallow & Wide Architectural Budget Allocation Benchmark
+uv run python experiments/bench_depth_vs_width.py
 ```
 
 
