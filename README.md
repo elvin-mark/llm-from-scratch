@@ -250,6 +250,9 @@ uv run python experiments/bench_bitnet.py
 
 # 7. Deep & Narrow vs. Shallow & Wide Architectural Budget Allocation Benchmark
 uv run python experiments/bench_depth_vs_width.py
+
+# 8. Recurrent Weight-Sharing / Loop Transformer (ALBERT-style) Benchmark
+uv run python experiments/bench_recurrent_depth.py
 ```
 
 
