@@ -29,7 +29,8 @@ def run_quantization_benchmark():
         tempfile.NamedTemporaryFile("wb", suffix=".bin", delete=False) as vocab_bin_f,
     ):
         tokenizer_data = ScratchTokenizer.train(
-            "dummy corpus for quantization test with extra text to generate tokens", vocab_size=vocab_size
+            "dummy corpus for quantization test with extra text to generate tokens",
+            vocab_size=vocab_size,
         )
         actual_vocab_size = len(tokenizer_data["model"]["vocab"])
 
