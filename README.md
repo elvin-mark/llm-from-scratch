@@ -256,6 +256,9 @@ uv run python experiments/bench_recurrent_depth.py
 
 # 9. Stateful KV-Cache vs. Non-Cached Quadratic Slowdown Benchmark
 uv run python experiments/bench_kv_cache.py
+
+# 10. Post-Training Hybrid SVD Decomposition + Int8 Quantization Benchmark
+uv run python experiments/bench_svd.py
 ```
 
 
