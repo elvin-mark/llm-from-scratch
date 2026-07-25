@@ -253,6 +253,9 @@ uv run python experiments/bench_depth_vs_width.py
 
 # 8. Recurrent Weight-Sharing / Loop Transformer (ALBERT-style) Benchmark
 uv run python experiments/bench_recurrent_depth.py
+
+# 9. Stateful KV-Cache vs. Non-Cached Quadratic Slowdown Benchmark
+uv run python experiments/bench_kv_cache.py
 ```
 
 
