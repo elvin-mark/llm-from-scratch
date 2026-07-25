@@ -112,7 +112,9 @@ def export_bitnet(model_path: str, tokenizer_path: str, output_path: str):
             f.write(struct.pack("i", len(token_str)))
             f.write(token_str)
 
-    print(f"✅ Successfully exported 1.58-bit binary to '{output_path}' and vocabulary to '{vocab_path}'!")
+    print(
+        f"✅ Successfully exported 1.58-bit binary to '{output_path}' and vocabulary to '{vocab_path}'!"
+    )
 
 
 if __name__ == "__main__":
