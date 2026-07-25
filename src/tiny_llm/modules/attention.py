@@ -201,3 +201,90 @@ class EducationalFlashAttention(nn.Module):
 
         output = output.transpose(1, 2).contiguous().view(bsz, seqlen, -1)
         return self.wo(output)
+
+
+class MultiHeadLatentAttention(nn.Module):
+    """
+    Multi-Head Latent Attention (MLA) mechanism (DeepSeek-V3 / DeepSeek-R1).
+    Compresses Key and Value projections into a shared low-rank latent vector (c^KV),
+    reducing KV-cache memory footprint by up to 90% while maintaining full MHA quality.
+    """
+
+    def __init__(
+        self,
+        dim: int,
+        n_heads: int,
+        kv_lora_rank: int = 32,
+        q_lora_rank: int = 64,
+        rope_dim: int = 16,
+    ):
+        super().__init__()
+        self.n_heads = n_heads
+        self.head_dim = dim // n_heads
+        self.kv_lora_rank = kv_lora_rank
+        self.q_lora_rank = q_lora_rank
+        self.rope_dim = rope_dim
+
+        # 1. KV Low-Rank Compression & Up-Projections
+        self.w_dkv = nn.Linear(dim, kv_lora_rank, bias=False)
+        self.w_uk = nn.Linear(kv_lora_rank, n_heads * self.head_dim, bias=False)
+        self.w_uv = nn.Linear(kv_lora_rank, n_heads * self.head_dim, bias=False)
+
+        # 2. Decoupled RoPE Key Projection
+        self.w_kr = nn.Linear(dim, rope_dim, bias=False)
+
+        # 3. Query Compression & Up-Projections
+        self.w_dq = nn.Linear(dim, q_lora_rank, bias=False)
+        self.w_uq = nn.Linear(q_lora_rank, n_heads * self.head_dim, bias=False)
+        self.w_qr = nn.Linear(q_lora_rank, n_heads * rope_dim, bias=False)
+
+        # 4. Output Projection
+        self.wo = nn.Linear(n_heads * self.head_dim, dim, bias=False)
+
+    def forward(
+        self, x: torch.Tensor, freqs_cis: torch.Tensor, mask: torch.Tensor = None
+    ) -> torch.Tensor:
+        bsz, seqlen, _ = x.shape
+
+        # 1. Compress KV to low-rank latent vector c_kv: [bsz, seqlen, kv_lora_rank]
+        c_kv = self.w_dkv(x)
+
+        # 2. Up-project c_kv to Content Keys and Values
+        xk_c = self.w_uk(c_kv).view(bsz, seqlen, self.n_heads, self.head_dim)
+        xv = self.w_uv(c_kv).view(bsz, seqlen, self.n_heads, self.head_dim)
+
+        # 3. Compute Decoupled Positional Key (K^R): [bsz, seqlen, 1, rope_dim] -> broadcast across heads
+        xk_r = self.w_kr(x).view(bsz, seqlen, 1, self.rope_dim)
+
+        # 4. Compress Query to c_q, up-project to Content Query and Positional Query
+        c_q = self.w_dq(x)
+        xq_c = self.w_uq(c_q).view(bsz, seqlen, self.n_heads, self.head_dim)
+        xq_r = self.w_qr(c_q).view(bsz, seqlen, self.n_heads, self.rope_dim)
+
+        # 5. Apply RoPE to Positional Queries (Q^R) and Positional Keys (K^R)
+        xk_r_exp = xk_r.expand(bsz, seqlen, self.n_heads, self.rope_dim)
+        xq_r, xk_r_exp = apply_rotary_emb(xq_r, xk_r_exp, freqs_cis)
+
+        # 6. Transpose to [bsz, n_heads, seqlen, head_dim / rope_dim]
+        xq_c = xq_c.transpose(1, 2)
+        xk_c = xk_c.transpose(1, 2)
+        xv = xv.transpose(1, 2)
+
+        xq_r = xq_r.transpose(1, 2)
+        xk_r_exp = xk_r_exp.transpose(1, 2)
+
+        # 7. Compute Combined Attention Scores: (Q^C * K^C + Q^R * K^R) / sqrt(head_dim + rope_dim)
+        scores_c = torch.matmul(xq_c, xk_c.transpose(2, 3))
+        scores_r = torch.matmul(xq_r, xk_r_exp.transpose(2, 3))
+
+        scale = 1.0 / math.sqrt(self.head_dim + self.rope_dim)
+        scores = (scores_c + scores_r) * scale
+
+        if mask is not None:
+            scores = scores + mask
+
+        scores = F.softmax(scores.float(), dim=-1).type_as(xq_c)
+        output = torch.matmul(scores, xv)
+
+        output = output.transpose(1, 2).contiguous().view(bsz, seqlen, -1)
+        return self.wo(output)
