@@ -65,9 +65,13 @@ int loaded_vocab_size = 0;
 
 void load_vocab(const char* filepath) {
     FILE* f = fopen(filepath, "rb");
-    if (!f) return;
+    if (!f) {
+        printf("\n⚠️ Warning: Could not open vocab file '%s'\n", filepath);
+        return;
+    }
 
     if (fread(&loaded_vocab_size, sizeof(int), 1, f) != 1) { fclose(f); return; }
+    printf("  Loaded %d subword tokens from '%s'\n", loaded_vocab_size, filepath);
     vocab = (char**)malloc(loaded_vocab_size * sizeof(char*));
     for (int i = 0; i < loaded_vocab_size; i++) {
         int len = 0;
