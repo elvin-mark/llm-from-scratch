@@ -11,13 +11,16 @@ ifeq ($(USE_BLAS), 1)
 	LDFLAGS += -lopenblas
 endif
 
-all: run run_cu runq train train_cu
+all: run run_cu runq run_bitnet train train_cu
 
 run: run.c
 	$(CC) $(CFLAGS) -o run run.c $(LDFLAGS)
 
 runq: runq.c
 	$(CC) $(CFLAGS) -o runq runq.c $(LDFLAGS)
+
+run_bitnet: run_bitnet.c
+	$(CC) $(CFLAGS) -o run_bitnet run_bitnet.c $(LDFLAGS)
 
 run_cu: run.cu
 	nvcc -O3 --use_fast_math -o run_cu run.cu -lcublas
