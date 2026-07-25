@@ -1,10 +1,10 @@
 /*
- * Native Apple Silicon Metal Shader Engine for Float32 TinyLLM (c/run_metal.m).
+ * Native Apple Silicon Metal Shader Engine for 1.58-Bit BitNetLLM (c/run_bitnet_metal.m).
  *
- * Runs standard Float32 TinyLLM autoregressive text generation directly on Apple M1/M2/M3/M4 GPUs
- * using Metal Compute Shaders (matmul_float_kernel) and Unified Memory Architecture.
+ * Runs 1.58-bit BitNetLLM text generation directly on Apple M1/M2/M3/M4 GPUs
+ * using Metal Compute Shaders (bitnet_linear_kernel - 0 FP Multiplications) and Unified Memory.
  *
- * Compile: clang -O3 -framework Metal -framework Foundation -o run_metal run_metal.m
+ * Compile: clang -O3 -framework Metal -framework Foundation -o run_metal_bitnet run_bitnet_metal.m
  */
 
 #import <Foundation/Foundation.h>
@@ -93,7 +93,7 @@ int argmax(float* x, int size) {
 int main(int argc, const char* argv[]) {
     @autoreleasepool {
         if (argc < 2) {
-            printf("Usage: ./run_metal <model_bin> [vocab_bin] [steps]\n");
+            printf("Usage: ./run_metal_bitnet <bitnet_model_bin> [vocab_bin] [steps]\n");
             return 1;
         }
 
@@ -116,7 +116,7 @@ int main(int argc, const char* argv[]) {
 
         fseek(file, 256, SEEK_SET);
 
-        printf("🍏 Native Apple Silicon Metal Engine (Float32 TinyLLM)...\n");
+        printf("🍏 Native Apple Silicon Metal Engine (1.58-Bit BitNetLLM - 0 FP Multiplications)...\n");
         printf("  dim: %d | layers: %d | heads: %d | vocab: %d\n", config.dim, config.n_layers, config.n_heads, config.vocab_size);
 
         id<MTLDevice> device = MTLCreateSystemDefaultDevice();
@@ -143,38 +143,40 @@ int main(int argc, const char* argv[]) {
         }
 
         id<MTLFunction> rmsNormFunc = [library newFunctionWithName:@"rmsnorm_kernel"];
+        id<MTLFunction> bitLinearFunc = [library newFunctionWithName:@"bitnet_linear_kernel"];
         id<MTLFunction> matmulFloatFunc = [library newFunctionWithName:@"matmul_float_kernel"];
 
         id<MTLComputePipelineState> rmsNormPipeline = [device newComputePipelineStateWithFunction:rmsNormFunc error:&error];
+        id<MTLComputePipelineState> bitLinearPipeline = [device newComputePipelineStateWithFunction:bitLinearFunc error:&error];
         id<MTLComputePipelineState> matmulFloatPipeline = [device newComputePipelineStateWithFunction:matmulFloatFunc error:&error];
 
         id<MTLCommandQueue> commandQueue = [device newCommandQueue];
 
-        // Allocate FP32 Metal Weights
+        // Allocate Ternary Metal Weights
         MetalWeights weights;
         weights.d_embed = [device newBufferWithLength:config.vocab_size * config.dim * sizeof(float) options:MTLResourceStorageModeShared];
         fread([weights.d_embed contents], sizeof(float), config.vocab_size * config.dim, file);
 
         weights.d_rms_att = [device newBufferWithLength:config.n_layers * config.dim * sizeof(float) options:MTLResourceStorageModeShared];
-        weights.d_wq = [device newBufferWithLength:config.n_layers * config.dim * config.dim * sizeof(float) options:MTLResourceStorageModeShared];
-        weights.d_wk = [device newBufferWithLength:config.n_layers * config.dim * config.dim * sizeof(float) options:MTLResourceStorageModeShared];
-        weights.d_wv = [device newBufferWithLength:config.n_layers * config.dim * config.dim * sizeof(float) options:MTLResourceStorageModeShared];
-        weights.d_wo = [device newBufferWithLength:config.n_layers * config.dim * config.dim * sizeof(float) options:MTLResourceStorageModeShared];
+        weights.d_wq = [device newBufferWithLength:config.n_layers * config.dim * config.dim options:MTLResourceStorageModeShared];
+        weights.d_wk = [device newBufferWithLength:config.n_layers * config.dim * config.dim options:MTLResourceStorageModeShared];
+        weights.d_wv = [device newBufferWithLength:config.n_layers * config.dim * config.dim options:MTLResourceStorageModeShared];
+        weights.d_wo = [device newBufferWithLength:config.n_layers * config.dim * config.dim options:MTLResourceStorageModeShared];
         weights.d_rms_ffn = [device newBufferWithLength:config.n_layers * config.dim * sizeof(float) options:MTLResourceStorageModeShared];
-        weights.d_w1 = [device newBufferWithLength:config.n_layers * config.ffn_dim * config.dim * sizeof(float) options:MTLResourceStorageModeShared];
-        weights.d_w2 = [device newBufferWithLength:config.n_layers * config.dim * config.ffn_dim * sizeof(float) options:MTLResourceStorageModeShared];
-        weights.d_w3 = [device newBufferWithLength:config.n_layers * config.ffn_dim * config.dim * sizeof(float) options:MTLResourceStorageModeShared];
+        weights.d_w1 = [device newBufferWithLength:config.n_layers * config.ffn_dim * config.dim options:MTLResourceStorageModeShared];
+        weights.d_w2 = [device newBufferWithLength:config.n_layers * config.dim * config.ffn_dim options:MTLResourceStorageModeShared];
+        weights.d_w3 = [device newBufferWithLength:config.n_layers * config.ffn_dim * config.dim options:MTLResourceStorageModeShared];
 
         for (int i = 0; i < config.n_layers; i++) {
             fread((float*)[weights.d_rms_att contents] + i * config.dim, sizeof(float), config.dim, file);
-            fread((float*)[weights.d_wq contents] + i * config.dim * config.dim, sizeof(float), config.dim * config.dim, file);
-            fread((float*)[weights.d_wk contents] + i * config.dim * config.dim, sizeof(float), config.dim * config.dim, file);
-            fread((float*)[weights.d_wv contents] + i * config.dim * config.dim, sizeof(float), config.dim * config.dim, file);
-            fread((float*)[weights.d_wo contents] + i * config.dim * config.dim, sizeof(float), config.dim * config.dim, file);
+            fread((int8_t*)[weights.d_wq contents] + i * config.dim * config.dim, 1, config.dim * config.dim, file);
+            fread((int8_t*)[weights.d_wk contents] + i * config.dim * config.dim, 1, config.dim * config.dim, file);
+            fread((int8_t*)[weights.d_wv contents] + i * config.dim * config.dim, 1, config.dim * config.dim, file);
+            fread((int8_t*)[weights.d_wo contents] + i * config.dim * config.dim, 1, config.dim * config.dim, file);
             fread((float*)[weights.d_rms_ffn contents] + i * config.dim, sizeof(float), config.dim, file);
-            fread((float*)[weights.d_w1 contents] + i * config.ffn_dim * config.dim, sizeof(float), config.ffn_dim * config.dim, file);
-            fread((float*)[weights.d_w2 contents] + i * config.dim * config.ffn_dim, sizeof(float), config.dim * config.ffn_dim, file);
-            fread((float*)[weights.d_w3 contents] + i * config.ffn_dim * config.dim, sizeof(float), config.ffn_dim * config.dim, file);
+            fread((int8_t*)[weights.d_w1 contents] + i * config.ffn_dim * config.dim, 1, config.ffn_dim * config.dim, file);
+            fread((int8_t*)[weights.d_w2 contents] + i * config.dim * config.ffn_dim, 1, config.dim * config.ffn_dim, file);
+            fread((int8_t*)[weights.d_w3 contents] + i * config.ffn_dim * config.dim, 1, config.ffn_dim * config.dim, file);
         }
 
         weights.d_rms_final = [device newBufferWithLength:config.dim * sizeof(float) options:MTLResourceStorageModeShared];
@@ -194,7 +196,7 @@ int main(int argc, const char* argv[]) {
         load_vocab(vocab_path);
 
         int token = 1;
-        printf("Generated Text (Apple Silicon Metal GPU FP32 TinyLLM): ");
+        printf("Generated Text (Apple Silicon Metal GPU 0 FP Multiplications): ");
         fflush(stdout);
 
         long start_time = clock();
@@ -214,11 +216,11 @@ int main(int argc, const char* argv[]) {
                 [enc setBytes:&dim_arg length:sizeof(uint) atIndex:3];
                 [enc dispatchThreads:MTLSizeMake(config.dim, 1, 1) threadsPerThreadgroup:MTLSizeMake(MIN(config.dim, 256), 1, 1)];
 
-                // 2. Float32 Matmul Q Projection
-                [enc setComputePipelineState:matmulFloatPipeline];
+                // 2. 1.58-Bit BitLinear Q Projection (0 FP Multiplications!)
+                [enc setComputePipelineState:bitLinearPipeline];
                 [enc setBuffer:state.d_q offset:0 atIndex:0];
                 [enc setBuffer:state.d_xb offset:0 atIndex:1];
-                [enc setBuffer:weights.d_wq offset:l * config.dim * config.dim * sizeof(float) atIndex:2];
+                [enc setBuffer:weights.d_wq offset:l * config.dim * config.dim atIndex:2];
                 uint in_dim_arg = config.dim, out_dim_arg = config.dim;
                 [enc setBytes:&in_dim_arg length:sizeof(uint) atIndex:3];
                 [enc setBytes:&out_dim_arg length:sizeof(uint) atIndex:4];
