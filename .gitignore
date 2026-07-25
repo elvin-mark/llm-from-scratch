@@ -23,4 +23,5 @@ c/train
 c/train_cu
 c/run_bitnet
 c/run_bitnet_cu
+c/run_metal
 *.bin

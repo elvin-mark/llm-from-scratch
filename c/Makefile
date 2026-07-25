@@ -22,6 +22,9 @@ runq: runq.c
 run_bitnet: run_bitnet.c
 	$(CC) $(CFLAGS) -o run_bitnet run_bitnet.c $(LDFLAGS)
 
+run_metal: run_metal.m
+	clang -O3 -framework Metal -framework Foundation -o run_metal run_metal.m
+
 run_cu: run.cu
 	nvcc -O3 --use_fast_math -o run_cu run.cu -lcublas
 
