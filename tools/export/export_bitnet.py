@@ -97,7 +97,22 @@ def export_bitnet(model_path: str, tokenizer_path: str, output_path: str):
         f.write(model.norm.weight.detach().numpy().astype("float32").tobytes())
         f.write(model.output.weight.detach().numpy().astype("float32").tobytes())
 
-    print(f"✅ Successfully exported 1.58-bit binary to '{output_path}'!")
+    # Export Tokenizer Vocabulary to vocab.bin
+    vocab_path = output_path.replace("bitnet_model.bin", "vocab.bin")
+    if not vocab_path.endswith("vocab.bin"):
+        vocab_path = "checkpoints/vocab.bin"
+
+    print(f"Exporting tokenizer vocabulary to {vocab_path}...")
+    vocab = tokenizer.get_vocab()
+    inv_vocab = {v: k for k, v in vocab.items()}
+    with open(vocab_path, "wb") as f:
+        f.write(struct.pack("i", vocab_size))
+        for i in range(vocab_size):
+            token_str = inv_vocab.get(i, "").encode("utf-8")
+            f.write(struct.pack("i", len(token_str)))
+            f.write(token_str)
+
+    print(f"✅ Successfully exported 1.58-bit binary to '{output_path}' and vocabulary to '{vocab_path}'!")
 
 
 if __name__ == "__main__":
