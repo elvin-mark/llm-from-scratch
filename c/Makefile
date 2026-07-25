@@ -25,6 +25,9 @@ run_bitnet: run_bitnet.c
 run_cu: run.cu
 	nvcc -O3 --use_fast_math -o run_cu run.cu -lcublas
 
+run_bitnet_cu: run_bitnet.cu
+	nvcc -O3 --use_fast_math -o run_bitnet_cu run_bitnet.cu
+
 train: train.c
 	$(CC) $(CFLAGS) -o train train.c $(LDFLAGS)
 
