@@ -60,6 +60,7 @@ If you are interested in exactly how the mathematics and auto-regressive flows o
 - [Sequence-Level Knowledge Distillation](docs/distillation.md): Transferring intelligence from 7B+ teacher LLMs (Qwen/DeepSeek) into TinyLLM.
 - [1.58-Bit BitNet b1.58](docs/bitnet.md): Ternary weight quantization {-1, 0, +1}, STE autograd, and addition-only matrix algebra.
 - [Multi-Head Latent Attention (MLA)](docs/mla.md): DeepSeek's low-rank latent KV compression (c^KV) and decoupled RoPE keys.
+- [NanoLLM Weight Tying](docs/nano_llm.md): Memory sharing between token embedding and output head for ultra-compact LLMs.
 - [Mathematical Foundations](docs/math.md): The theoretical mathematical formulas defining the entire forward pass.
 - [Training Pipeline](docs/training.md): Overview of dataset ingestion, hyperparameter choices, and the CrossEntropy backward pass loop.
 - [Tokenizer Architecture](docs/tokenizer.md): Explanation of the Byte-Pair Encoding (BPE) training and inference algorithms.

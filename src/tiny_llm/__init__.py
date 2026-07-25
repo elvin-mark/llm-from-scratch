@@ -6,6 +6,7 @@ from tiny_llm.models import (
     MoETransformerBlock,
     BitNetLLM,
     BitNetBlock,
+    NanoLLM,
 )
 from tiny_llm.modules import (
     RMSNorm,
@@ -31,6 +32,7 @@ __all__ = [
     "TinyLLM",
     "MoELLM",
     "BitNetLLM",
+    "NanoLLM",
     "TransformerBlock",
     "MoETransformerBlock",
     "BitNetBlock",
