@@ -35,12 +35,13 @@ llm-from-scratch/
 │       ├── models/           # Models (TinyLLM, MoELLM)
 │       ├── tokenizer.py      # BPE Tokenizer implementation
 │       └── data.py           # Dataset loaders
+├── experiments/              # Standalone empirical benchmark suite (bench_attention, bench_flash_attn, bench_moe, bench_lora, bench_quant)
 ├── scripts/                  # High-level entrypoints (train, generate, inference, interpretability)
 ├── tools/
 │   └── export/               # Export utilities (export_c, export_q8, export_onnx)
 ├── c/                        # Bare-metal C & CUDA engines (run.c, train.c, run.cu, train.cu)
 ├── ui/                       # Web interface & deployment configs
-├── tests/                    # Unit testing suite (test_model.py, test_data.py, test_moe.py)
+├── tests/                    # Unit testing suite (26 unit tests)
 ├── docs/                     # Documentation & architecture guides
 ├── data/                     # Training datasets (corpus.txt)
 └── checkpoints/              # Model weights & tokenizer files
@@ -219,5 +220,29 @@ uv build
 The resulting packages will be generated inside the `dist/` directory:
 * `dist/llm_from_scratch-0.1.0-py3-none-any.whl`
 * `dist/llm_from_scratch-0.1.0.tar.gz`
+
+---
+
+## Empirical Benchmarks Suite (`experiments/`)
+
+The repository includes a dedicated benchmark suite under `experiments/` to measure tradeoffs in memory, FLOPs, parameter efficiency, and execution speed:
+
+```bash
+# 1. MHA vs. GQA KV-Cache Memory Footprint & Speed Benchmark
+uv run python experiments/bench_attention.py
+
+# 2. Standard Attention O(N^2) vs. FlashAttention O(N) Benchmark
+uv run python experiments/bench_flash_attn.py
+
+# 3. Dense (TinyLLM) vs. Sparse MoE (MoELLM) Active FLOPs Benchmark
+uv run python experiments/bench_moe.py
+
+# 4. Full Fine-Tuning vs. LoRA (r=4) Parameter Efficiency Benchmark
+uv run python experiments/bench_lora.py
+
+# 5. FP32 vs. Int8 Dynamic Quantization Model Size Benchmark
+uv run python experiments/bench_quant.py
+```
+
 
 
