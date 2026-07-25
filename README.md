@@ -243,6 +243,9 @@ uv run python experiments/bench_lora.py
 
 # 5. FP32 vs. Int8 Dynamic Quantization Model Size Benchmark
 uv run python experiments/bench_quant.py
+
+# 6. Float32 vs. 1.58-Bit BitNet Zero-Multiplication & Memory Benchmark
+uv run python experiments/bench_bitnet.py
 ```
 
 
