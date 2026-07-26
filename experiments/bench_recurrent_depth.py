@@ -1,7 +1,9 @@
 import time
+
 import torch
 import torch.nn as nn
-from tiny_llm import TransformerBlock, RMSNorm, precompute_freqs_cis
+
+from tiny_llm import RMSNorm, TransformerBlock, precompute_freqs_cis
 
 
 class RecurrentLoopLLM(nn.Module):
@@ -50,9 +52,7 @@ class RecurrentLoopLLM(nn.Module):
 
 def run_recurrent_depth_benchmark():
     print("=" * 95)
-    print(
-        "📊 BENCHMARK: Standard 4-Layer Transformer vs. 1-Layer Recurrent Loop Transformer"
-    )
+    print("📊 BENCHMARK: Standard 4-Layer Transformer vs. 1-Layer Recurrent Loop Transformer")
     print("=" * 95)
 
     vocab_size = 4000
@@ -106,9 +106,7 @@ def run_recurrent_depth_benchmark():
         for _ in range(20):
             std_logits = standard_model(dummy_input)
         std_time_ms = ((time.perf_counter() - t0) / 20.0) * 1000.0
-        std_loss = criterion(
-            std_logits.view(-1, vocab_size), target_labels.view(-1)
-        ).item()
+        std_loss = criterion(std_logits.view(-1, vocab_size), target_labels.view(-1)).item()
 
         # Recurrent Timing
         for _ in range(5):
@@ -117,9 +115,7 @@ def run_recurrent_depth_benchmark():
         for _ in range(20):
             rec_logits = recurrent_model(dummy_input)
         rec_time_ms = ((time.perf_counter() - t0) / 20.0) * 1000.0
-        rec_loss = criterion(
-            rec_logits.view(-1, vocab_size), target_labels.view(-1)
-        ).item()
+        rec_loss = criterion(rec_logits.view(-1, vocab_size), target_labels.view(-1)).item()
 
     print(
         f"  Architecture                 | {'Total Params':<13} | {'Memory (MB)':<12} | {'Effective Layers':<17} | {'Forward (ms)':<12} | {'Loss':<6}"

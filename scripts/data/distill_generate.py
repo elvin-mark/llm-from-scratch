@@ -1,13 +1,11 @@
+import argparse
+import json
 import os
 import time
-import argparse
 import urllib.request
-import json
 
 
-def query_llm_teacher(
-    endpoint_url: str, model_name: str, prompt: str, api_key: str = None
-) -> str:
+def query_llm_teacher(endpoint_url: str, model_name: str, prompt: str, api_key: str = None) -> str:
     """
     Queries a Teacher LLM using an OpenAI-compatible API endpoint (works with Ollama, DeepSeek, or vLLM).
     """
@@ -29,9 +27,7 @@ def query_llm_teacher(
         "max_tokens": 150,
     }
 
-    req = urllib.request.Request(
-        url, data=json.dumps(payload).encode("utf-8"), headers=headers
-    )
+    req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=30) as response:
             res_data = json.loads(response.read().decode("utf-8"))
@@ -75,15 +71,11 @@ def generate_distilled_dataset(
 
             for template in prompt_templates:
                 prompt = template + f'"{sentence}"'
-                response = query_llm_teacher(
-                    endpoint_url, model_name, prompt, api_key=api_key
-                )
+                response = query_llm_teacher(endpoint_url, model_name, prompt, api_key=api_key)
 
                 if response:
                     lines = [
-                        line_str.strip()
-                        for line_str in response.split("\n")
-                        if line_str.strip()
+                        line_str.strip() for line_str in response.split("\n") if line_str.strip()
                     ]
                     for line in lines:
                         # Clean unwanted quotes/markdown formatting
@@ -101,9 +93,7 @@ def generate_distilled_dataset(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Sequence-Level Knowledge Distillation Generator."
-    )
+    parser = argparse.ArgumentParser(description="Sequence-Level Knowledge Distillation Generator.")
     parser.add_argument(
         "--input-corpus",
         type=str,

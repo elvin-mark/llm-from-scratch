@@ -1,5 +1,7 @@
 import time
+
 import torch
+
 from tiny_llm import Attention, GroupedQueryAttention, precompute_freqs_cis
 
 
@@ -7,9 +9,7 @@ def run_attention_benchmark(
     dim: int = 128, n_heads: int = 8, n_kv_heads: int = 2, batch_size: int = 2
 ):
     print("=" * 75)
-    print(
-        "📊 BENCHMARK 1: Multi-Head Attention (MHA) vs. Grouped Query Attention (GQA)"
-    )
+    print("📊 BENCHMARK 1: Multi-Head Attention (MHA) vs. Grouped Query Attention (GQA)")
     print("=" * 75)
     print(
         f"  Configuration: dim={dim}, n_heads={n_heads}, n_kv_heads={n_kv_heads}, batch_size={batch_size}"
@@ -61,9 +61,7 @@ def run_attention_benchmark(
         )
 
     print("-" * 75)
-    print(
-        "💡 Key Takeaway: GQA reduces KV-Cache memory footprint by 4x (n_heads / n_kv_heads = 4)"
-    )
+    print("💡 Key Takeaway: GQA reduces KV-Cache memory footprint by 4x (n_heads / n_kv_heads = 4)")
     print("=" * 75 + "\n")
 
 

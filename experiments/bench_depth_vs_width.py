@@ -1,14 +1,14 @@
 import time
+
 import torch
 import torch.nn as nn
+
 from tiny_llm import TinyLLM
 
 
 def run_depth_vs_width_benchmark():
     print("=" * 95)
-    print(
-        "📊 BENCHMARK: Deep & Narrow vs. Shallow & Wide Architectural Budget Allocation"
-    )
+    print("📊 BENCHMARK: Deep & Narrow vs. Shallow & Wide Architectural Budget Allocation")
     print("=" * 95)
 
     vocab_size = 4000

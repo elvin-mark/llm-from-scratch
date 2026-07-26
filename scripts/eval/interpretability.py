@@ -1,12 +1,13 @@
+import math
+import os
+import sys
+
+import numpy as np
+import pandas as pd
+import streamlit as st
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import os
-import sys
-import math
-import streamlit as st
-import pandas as pd
-import numpy as np
 
 # Try importing plotly for interactive premium plots; fallback to matplotlib if not installed
 try:
@@ -18,9 +19,7 @@ except ImportError:
     HAS_PLOTLY = False
     import matplotlib
 
-    matplotlib.use(
-        "Agg"
-    )  # Prevents segmentation faults on macOS by using a non-GUI backend
+    matplotlib.use("Agg")  # Prevents segmentation faults on macOS by using a non-GUI backend
     import matplotlib.pyplot as plt
     import seaborn as sns
 
@@ -242,9 +241,7 @@ def run_gradient_saliency(model, tokenizer, tokens):
 
     grad_at_embeddings = embeddings_grad.grad
     if grad_at_embeddings is not None:
-        position_saliency = (
-            torch.norm(grad_at_embeddings[tokens[0]], dim=-1).cpu().numpy()
-        )
+        position_saliency = torch.norm(grad_at_embeddings[tokens[0]], dim=-1).cpu().numpy()
         max_val = position_saliency.max() + 1e-8
         normalized_saliency = position_saliency / max_val
         return normalized_saliency
@@ -292,9 +289,7 @@ if "ablation_mask" not in st.session_state:
 # Sidebar Configuration
 st.sidebar.header("📁 Model Configurations")
 default_model_path = (
-    "checkpoints/tiny_llm.pth"
-    if os.path.exists("checkpoints/tiny_llm.pth")
-    else "tiny_llm.pth"
+    "checkpoints/tiny_llm.pth" if os.path.exists("checkpoints/tiny_llm.pth") else "tiny_llm.pth"
 )
 default_tok_path = (
     "checkpoints/tokenizer.json"
@@ -312,18 +307,14 @@ ffn_dim = st.sidebar.number_input("FFN Dim (ffn_dim)", min_value=16, value=512)
 max_seq_len = st.sidebar.number_input("Max Seq Length", min_value=16, value=64)
 
 if not os.path.exists(model_file) or not os.path.exists(tokenizer_file):
-    st.sidebar.error(
-        "⚠️ Model file or Tokenizer file not found. Please verify the absolute paths."
-    )
+    st.sidebar.error("⚠️ Model file or Tokenizer file not found. Please verify the absolute paths.")
     st.stop()
 else:
     try:
         model, tokenizer = load_model_and_tokenizer(
             model_file, tokenizer_file, dim, n_layers, n_heads, ffn_dim, max_seq_len
         )
-        st.sidebar.success(
-            f"✅ Model and Tokenizer loaded successfully on {DEVICE.type.upper()}!"
-        )
+        st.sidebar.success(f"✅ Model and Tokenizer loaded successfully on {DEVICE.type.upper()}!")
     except Exception as e:
         st.sidebar.error(f"Failed to load model: {e}")
         st.stop()
@@ -372,9 +363,7 @@ def validate_input_sequence(text):
         return None, None
     tokens = [cls_id] + encoded.ids
     if len(tokens) > max_seq_len:
-        st.warning(
-            f"Input is too long ({len(tokens)} tokens). Truncating to {max_seq_len} tokens."
-        )
+        st.warning(f"Input is too long ({len(tokens)} tokens). Truncating to {max_seq_len} tokens.")
         tokens = tokens[:max_seq_len]
     return tokens, [tokenizer.id_to_token(t) for t in tokens]
 
@@ -408,15 +397,11 @@ with tab1:
                 model(input_tensor)
 
             block = model.layers[layer_selection]
-            attn_matrix = block.attention.last_attention_weights[
-                0, head_selection
-            ].numpy()
+            attn_matrix = block.attention.last_attention_weights[0, head_selection].numpy()
 
             if HAS_PLOTLY:
                 fig = go.Figure(
-                    data=go.Heatmap(
-                        z=attn_matrix, x=token_strs, y=token_strs, colorscale="Cividis"
-                    )
+                    data=go.Heatmap(z=attn_matrix, x=token_strs, y=token_strs, colorscale="Cividis")
                 )
                 fig.update_layout(
                     title=f"Attention Map (Layer {layer_selection}, Head {head_selection})",
@@ -460,7 +445,9 @@ with tab2:
         def render_logit_lens_html(layer_names, token_strs, predictions):
             html = "<div style='overflow-x: auto;'><table style='width:100%; border-collapse: collapse; color: white; background-color: #1F2937; min-width: 600px;'>"
             html += "<tr style='border-bottom: 2px solid #4F46E5;'>"
-            html += "<th style='padding: 12px; text-align: left; background-color: #111827;'>Layer</th>"
+            html += (
+                "<th style='padding: 12px; text-align: left; background-color: #111827;'>Layer</th>"
+            )
             for token in token_strs:
                 html += f"<th style='padding: 12px; text-align: center; background-color: #111827;'>{token}</th>"
             html += "</tr>"
@@ -472,9 +459,7 @@ with tab2:
                     opacity = min(max(prob, 0.05), 1.0)
                     bg_color = f"rgba(79, 70, 229, {opacity})"
                     html += f"<td style='padding: 12px; text-align: center; background-color: {bg_color}; border: 1px solid #374151; min-width: 80px;'>"
-                    html += (
-                        f"<div style='font-weight: bold; font-size: 14px;'>{word}</div>"
-                    )
+                    html += f"<div style='font-weight: bold; font-size: 14px;'>{word}</div>"
                     html += f"<div style='font-size: 11px; opacity: 0.8;'>{prob * 100:.1f}%</div>"
                     html += "</td>"
                 html += "</tr>"
@@ -487,9 +472,7 @@ with tab2:
         )
 
         st.divider()
-        st.subheader(
-            f"2. Layer-by-Layer Attribution for Predicted Token: `{final_token}`"
-        )
+        st.subheader(f"2. Layer-by-Layer Attribution for Predicted Token: `{final_token}`")
         df_attribs = pd.DataFrame(attribs)
         col_chart, col_explain = st.columns([2, 1])
 
@@ -548,9 +531,7 @@ with tab3:
             key="tab3_fmri_layer",
         )
         block = model.layers[fmri_layer_idx]
-        activations = block.feed_forward.last_activations[
-            0
-        ].numpy()  # [seqlen, ffn_dim]
+        activations = block.feed_forward.last_activations[0].numpy()  # [seqlen, ffn_dim]
 
         num_neurons_to_show = st.slider(
             "Number of active neurons to display:",
@@ -745,9 +726,7 @@ with tab6:
             if st.button("Apply Prompt & Reset"):
                 if custom_prompt.strip():
                     encoded = tokenizer.encode(custom_prompt)
-                    ids = encoded.ids[
-                        : max_seq_len - 1
-                    ]  # ensure it doesn't exceed limit
+                    ids = encoded.ids[: max_seq_len - 1]  # ensure it doesn't exceed limit
                     st.session_state.gen_token_ids = [cls_id] + ids
                 else:
                     st.session_state.gen_token_ids = [cls_id]
@@ -761,28 +740,22 @@ with tab6:
             if len(st.session_state.gen_token_ids) >= max_seq_len:
                 st.warning("Maximum sequence length reached.")
             else:
-                current_ids = torch.tensor(
-                    [st.session_state.gen_token_ids], dtype=torch.long
-                ).to(DEVICE)
+                current_ids = torch.tensor([st.session_state.gen_token_ids], dtype=torch.long).to(
+                    DEVICE
+                )
                 with torch.no_grad():
                     logits = model(current_ids)
                     next_token_logits = logits[0, -1, :] / temperature
                     if top_k_val > 0:
-                        top_k_threshold = torch.topk(next_token_logits, top_k_val)[0][
-                            -1
-                        ]
-                        next_token_logits[next_token_logits < top_k_threshold] = float(
-                            "-inf"
-                        )
+                        top_k_threshold = torch.topk(next_token_logits, top_k_val)[0][-1]
+                        next_token_logits[next_token_logits < top_k_threshold] = float("-inf")
                     probs = F.softmax(next_token_logits, dim=-1)
                     next_token = torch.multinomial(probs, num_samples=1).item()
                     st.session_state.gen_token_ids.append(next_token)
                     st.rerun()
 
     with col2:
-        token_strs_gen = [
-            tokenizer.id_to_token(tid) for tid in st.session_state.gen_token_ids
-        ]
+        token_strs_gen = [tokenizer.id_to_token(tid) for tid in st.session_state.gen_token_ids]
         decoded_text = tokenizer.decode(st.session_state.gen_token_ids[1:])
         st.markdown(f"**Raw Tokens sequence:** `{' | '.join(token_strs_gen)}`")
         st.success(
@@ -791,9 +764,9 @@ with tab6:
 
         st.divider()
         if len(st.session_state.gen_token_ids) < max_seq_len:
-            current_ids = torch.tensor(
-                [st.session_state.gen_token_ids], dtype=torch.long
-            ).to(DEVICE)
+            current_ids = torch.tensor([st.session_state.gen_token_ids], dtype=torch.long).to(
+                DEVICE
+            )
             with torch.no_grad():
                 logits = model(current_ids)
                 next_token_logits = logits[0, -1, :]
@@ -836,9 +809,7 @@ with tab6:
                 )
                 st.plotly_chart(fig_candidates, use_container_width=True)
         else:
-            st.info(
-                "Maximum sequence length reached. Please reset to continue generating."
-            )
+            st.info("Maximum sequence length reached. Please reset to continue generating.")
 
 with tab7:
     st.header("📈 Weight Distributions & Parameter Heatmaps")
@@ -950,9 +921,7 @@ with tab7:
 
         # Downsample large tensors to keep UI highly responsive
         if len(flat_weights) > 100000:
-            flat_weights_display = np.random.choice(
-                flat_weights, size=100000, replace=False
-            )
+            flat_weights_display = np.random.choice(flat_weights, size=100000, replace=False)
             st.info(
                 f"Showing a random sample of 100,000 weights (out of {len(flat_weights):,}) for rendering performance."
             )
@@ -1006,17 +975,14 @@ with tab7:
                     display_matrix,
                     color_continuous_scale="RdBu",
                     range_color=[-abs_max, abs_max],
-                    title=f"Heatmap of {tensor_name}"
-                    + (" (Cropped)" if slice_matrix else ""),
+                    title=f"Heatmap of {tensor_name}" + (" (Cropped)" if slice_matrix else ""),
                 )
                 fig_heat.update_layout(template="plotly_dark", height=400)
                 st.plotly_chart(fig_heat, use_container_width=True)
             else:
                 fig, ax = plt.subplots(figsize=(6, 4))
                 sns.heatmap(display_matrix, cmap="RdBu", center=0.0, ax=ax)
-                ax.set_title(
-                    f"Heatmap of {tensor_name}" + (" (Cropped)" if slice_matrix else "")
-                )
+                ax.set_title(f"Heatmap of {tensor_name}" + (" (Cropped)" if slice_matrix else ""))
                 st.pyplot(fig)
         else:
             st.warning(

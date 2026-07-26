@@ -1,6 +1,8 @@
 import os
+
 import torch
 import torch.nn.functional as F
+
 from tiny_llm.model import TinyLLM
 
 
@@ -67,14 +69,10 @@ def generate(
 
     try:
         # We explicitly set weights_only=True to resolve future warnings regarding security of pickling.
-        model.load_state_dict(
-            torch.load(model_path, map_location=device, weights_only=True)
-        )
+        model.load_state_dict(torch.load(model_path, map_location=device, weights_only=True))
         print("Model loaded successfully.")
     except FileNotFoundError:
-        print(
-            f"Model file '{model_path}' not found. Make sure to train the model first."
-        )
+        print(f"Model file '{model_path}' not found. Make sure to train the model first.")
         return
 
     # Set model to evaluation mode (disables dropout, affects batchnorm, though neither are used here)
@@ -110,9 +108,7 @@ def generate(
 
                 # 2. Top-K filtering (remove long-tail probabilities to avoid garbage text)
                 if top_k > 0:
-                    top_k_threshold = torch.topk(next_token_logits, top_k)[0][
-                        ..., -1, None
-                    ]
+                    top_k_threshold = torch.topk(next_token_logits, top_k)[0][..., -1, None]
                     indices_to_remove = next_token_logits < top_k_threshold
                     next_token_logits[indices_to_remove] = float("-inf")
 
@@ -129,9 +125,7 @@ def generate(
                 generated_token_ids.append(next_token)
 
                 # Append the new token to our current sequence context and continue
-                next_token_tensor = torch.tensor([[next_token]], dtype=torch.long).to(
-                    device
-                )
+                next_token_tensor = torch.tensor([[next_token]], dtype=torch.long).to(device)
                 current_ids = torch.cat((current_ids, next_token_tensor), dim=1)
 
                 # Hard cap on sequence length based on our model's maximum sequence length

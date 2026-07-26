@@ -3,6 +3,7 @@ TinyLLM inference in pure NumPy (Hyper-Compact).
 """
 
 import argparse
+
 import numpy as np
 
 
@@ -13,9 +14,7 @@ def apply_rotary_emb(x, fc):
     return np.stack([out.real, out.imag], axis=-1).reshape(x.shape).astype(np.float32)
 
 
-def generate(
-    w, encode, decode, prompt, max_new=40, temp=0.8, dim=128, n_heads=4, max_seq=128
-):
+def generate(w, encode, decode, prompt, max_new=40, temp=0.8, dim=128, n_heads=4, max_seq=128):
     tokens = list(encode(prompt))
     for _ in range(max_new):
         b, s = 1, min(len(tokens), max_seq)
@@ -47,12 +46,8 @@ def generate(
             xq, xk, xv = [x @ w[f"{pfx}.attention.w{c}.weight"].T for c in "qkv"]
 
             # RoPE
-            xq = apply_rotary_emb(xq.reshape(b, s, n_heads, -1), fc).transpose(
-                0, 2, 1, 3
-            )
-            xk = apply_rotary_emb(xk.reshape(b, s, n_heads, -1), fc).transpose(
-                0, 2, 1, 3
-            )
+            xq = apply_rotary_emb(xq.reshape(b, s, n_heads, -1), fc).transpose(0, 2, 1, 3)
+            xk = apply_rotary_emb(xk.reshape(b, s, n_heads, -1), fc).transpose(0, 2, 1, 3)
             xv = xv.reshape(b, s, n_heads, -1).transpose(0, 2, 1, 3)
 
             # Causal Self-Attention
@@ -71,19 +66,12 @@ def generate(
             h1 = x @ w[f"{pfx}.feed_forward.w1.weight"].T
             h = (
                 h
-                + (
-                    (h1 / (1.0 + np.exp(-h1)))
-                    * (x @ w[f"{pfx}.feed_forward.w3.weight"].T)
-                )
+                + ((h1 / (1.0 + np.exp(-h1))) * (x @ w[f"{pfx}.feed_forward.w3.weight"].T))
                 @ w[f"{pfx}.feed_forward.w2.weight"].T
             )
             layer_idx += 1
 
-        h = (
-            h
-            * (1.0 / np.sqrt(np.mean(h**2, axis=-1, keepdims=True) + 1e-6))
-            * w["norm.weight"]
-        )
+        h = h * (1.0 / np.sqrt(np.mean(h**2, axis=-1, keepdims=True) + 1e-6)) * w["norm.weight"]
         logits = (h @ w["output.weight"].T)[0, -1]
 
         if temp <= 0:
@@ -119,6 +107,7 @@ if __name__ == "__main__":
         }
 
     import os
+
     from tokenizers import Tokenizer
 
     tokenizer_file = (

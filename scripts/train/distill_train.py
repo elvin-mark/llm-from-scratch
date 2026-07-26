@@ -1,10 +1,11 @@
-import os
 import argparse
+import os
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from tiny_llm import TinyLLM, MoELLM, MoELLMConfig, SentencesDataset
+from tiny_llm import MoELLM, MoELLMConfig, SentencesDataset, TinyLLM
 
 
 def train_distilled_student(
@@ -24,21 +25,15 @@ def train_distilled_student(
 
     if not os.path.exists(corpus_path):
         print(f"❌ Distilled corpus file '{corpus_path}' not found.")
-        print(
-            "💡 Run `python scripts/data/distill_generate.py` first to generate synthetic text."
-        )
+        print("💡 Run `python scripts/data/distill_generate.py` first to generate synthetic text.")
         return
 
     if not os.path.exists(tokenizer_path):
-        print(
-            f"❌ Tokenizer file '{tokenizer_path}' not found. Please train tokenizer first."
-        )
+        print(f"❌ Tokenizer file '{tokenizer_path}' not found. Please train tokenizer first.")
         return
 
     # Load dataset
-    dataset = SentencesDataset(
-        file_path=corpus_path, tokenizer_path=tokenizer_path, max_length=64
-    )
+    dataset = SentencesDataset(file_path=corpus_path, tokenizer_path=tokenizer_path, max_length=64)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
     vocab_size = dataset.tokenizer.get_vocab_size()
 
@@ -95,9 +90,7 @@ def train_distilled_student(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Train Student Model on Distilled Corpus."
-    )
+    parser = argparse.ArgumentParser(description="Train Student Model on Distilled Corpus.")
     parser.add_argument(
         "--corpus",
         type=str,
@@ -116,9 +109,7 @@ if __name__ == "__main__":
         default="checkpoints/tiny_llm_distilled.pth",
         help="Output model checkpoint path",
     )
-    parser.add_argument(
-        "--epochs", type=int, default=5, help="Number of training epochs"
-    )
+    parser.add_argument("--epochs", type=int, default=5, help="Number of training epochs")
     parser.add_argument("--batch-size", type=int, default=16, help="Batch size")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
     parser.add_argument(

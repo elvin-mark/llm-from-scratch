@@ -1,6 +1,8 @@
 import time
+
 import torch
 import torch.nn as nn
+
 from tiny_llm import TinyLLM, inject_lora
 
 
@@ -18,17 +20,13 @@ def run_lora_benchmark():
     # 1. Full Fine-Tuning Model Setup
     full_model = TinyLLM(vocab_size=vocab_size, dim=dim, n_layers=n_layers)
     full_total_params = sum(p.numel() for p in full_model.parameters())
-    full_trainable_params = sum(
-        p.numel() for p in full_model.parameters() if p.requires_grad
-    )
+    full_trainable_params = sum(p.numel() for p in full_model.parameters() if p.requires_grad)
 
     # 2. LoRA Model Setup
     lora_model = TinyLLM(vocab_size=vocab_size, dim=dim, n_layers=n_layers)
     lora_model = inject_lora(lora_model, r=4, target_modules=("wq", "wv"))
     lora_total_params = sum(p.numel() for p in lora_model.parameters())
-    lora_trainable_params = sum(
-        p.numel() for p in lora_model.parameters() if p.requires_grad
-    )
+    lora_trainable_params = sum(p.numel() for p in lora_model.parameters() if p.requires_grad)
 
     dummy_x = torch.randint(0, vocab_size, (batch_size, seq_len))
     dummy_y = torch.randint(0, vocab_size, (batch_size, seq_len))
@@ -74,9 +72,7 @@ def run_lora_benchmark():
     print(
         f"💡 Key Takeaway: LoRA updates only {lora_trainable_params:,} parameters ({(lora_trainable_params / lora_total_params) * 100:.2f}% of model),"
     )
-    print(
-        "   saving substantial memory during backward pass and optimizer state tracking."
-    )
+    print("   saving substantial memory during backward pass and optimizer state tracking.")
     print("=" * 80 + "\n")
 
 

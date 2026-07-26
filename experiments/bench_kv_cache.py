@@ -1,8 +1,10 @@
-import time
 import math
+import time
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 from tiny_llm import TinyLLM, apply_rotary_emb
 
 
@@ -143,9 +145,7 @@ def run_kv_cache_benchmark():
     with torch.no_grad():
         for step in range(generate_steps):
             t0 = time.perf_counter()
-            logits = model.forward_step_with_cache(
-                current_token, step, k_cache, v_cache
-            )
+            logits = model.forward_step_with_cache(current_token, step, k_cache, v_cache)
             next_token = torch.argmax(logits[:, -1, :], dim=-1, keepdim=True)
             current_token = next_token
             t1 = time.perf_counter()
@@ -174,12 +174,8 @@ def run_kv_cache_benchmark():
     print(
         f"💡 Key Takeaway: Stateful KV-Cache provides a {speedup:.2f}x OVERALL GENERATION SPEEDUP!"
     )
-    print(
-        "   Non-cached generation grows quadratically O(N^2) as sequence length extends,"
-    )
-    print(
-        "   whereas KV-cache maintains flat O(1) constant step latency for all generated tokens!"
-    )
+    print("   Non-cached generation grows quadratically O(N^2) as sequence length extends,")
+    print("   whereas KV-cache maintains flat O(1) constant step latency for all generated tokens!")
     print("=" * 95 + "\n")
 
 

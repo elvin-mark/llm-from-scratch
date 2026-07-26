@@ -1,9 +1,10 @@
 import os
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
 
-from tiny_llm import TinyLLM, SentencesDataset, inject_lora, merge_lora
+from tiny_llm import SentencesDataset, TinyLLM, inject_lora, merge_lora
 
 
 def train_lora():
@@ -14,29 +15,21 @@ def train_lora():
 
     # Paths
     model_path = (
-        "checkpoints/tiny_llm.pth"
-        if os.path.exists("checkpoints/tiny_llm.pth")
-        else "tiny_llm.pth"
+        "checkpoints/tiny_llm.pth" if os.path.exists("checkpoints/tiny_llm.pth") else "tiny_llm.pth"
     )
     tokenizer_path = (
         "checkpoints/tokenizer.json"
         if os.path.exists("checkpoints/tokenizer.json")
         else "tokenizer.json"
     )
-    corpus_path = (
-        "data/corpus.txt" if os.path.exists("data/corpus.txt") else "corpus.txt"
-    )
+    corpus_path = "data/corpus.txt" if os.path.exists("data/corpus.txt") else "corpus.txt"
 
     if not os.path.exists(corpus_path) or not os.path.exists(tokenizer_path):
-        print(
-            "❌ Dataset or Tokenizer not found. Please run scripts/data/prepare_data.py first."
-        )
+        print("❌ Dataset or Tokenizer not found. Please run scripts/data/prepare_data.py first.")
         return
 
     # Load dataset
-    dataset = SentencesDataset(
-        file_path=corpus_path, tokenizer_path=tokenizer_path, max_length=64
-    )
+    dataset = SentencesDataset(file_path=corpus_path, tokenizer_path=tokenizer_path, max_length=64)
     dataloader = DataLoader(dataset, batch_size=16, shuffle=True)
     vocab_size = dataset.tokenizer.get_vocab_size()
 
@@ -50,9 +43,7 @@ def train_lora():
         max_seq_len=64,
     )
     if os.path.exists(model_path):
-        model.load_state_dict(
-            torch.load(model_path, map_location="cpu", weights_only=True)
-        )
+        model.load_state_dict(torch.load(model_path, map_location="cpu", weights_only=True))
         print(f"Loaded base model checkpoint from {model_path}")
 
     # Inject LoRA adapters (rank r=4 into Query 'wq' and Value 'wv' projections)
@@ -67,9 +58,7 @@ def train_lora():
     )
 
     # Optimizer: Only update trainable LoRA parameters
-    optimizer = torch.optim.AdamW(
-        [p for p in model.parameters() if p.requires_grad], lr=1e-3
-    )
+    optimizer = torch.optim.AdamW([p for p in model.parameters() if p.requires_grad], lr=1e-3)
     criterion = nn.CrossEntropyLoss(ignore_index=dataset.tokenizer.token_to_id("[PAD]"))
 
     # Fine-tuning loop (5 epochs for demonstration)
@@ -93,9 +82,7 @@ def train_lora():
 
     # Save small LoRA adapters dictionary
     os.makedirs("checkpoints", exist_ok=True)
-    adapter_state = {
-        k: v for k, v in model.state_dict().items() if "lora_A" in k or "lora_B" in k
-    }
+    adapter_state = {k: v for k, v in model.state_dict().items() if "lora_A" in k or "lora_B" in k}
     torch.save(adapter_state, "checkpoints/lora_adapters.pth")
     print(
         f"✅ Saved LoRA adapter weights ({len(adapter_state)} tensors) to checkpoints/lora_adapters.pth"
@@ -104,9 +91,7 @@ def train_lora():
     # Demonstrate merging LoRA weights back into standard linear layers for zero-latency inference
     merged_model = merge_lora(model)
     torch.save(merged_model.state_dict(), "checkpoints/tiny_llm_finetuned.pth")
-    print(
-        "✅ Merged LoRA weights into base model and saved to checkpoints/tiny_llm_finetuned.pth"
-    )
+    print("✅ Merged LoRA weights into base model and saved to checkpoints/tiny_llm_finetuned.pth")
 
 
 if __name__ == "__main__":

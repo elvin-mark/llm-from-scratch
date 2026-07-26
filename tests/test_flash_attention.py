@@ -1,4 +1,5 @@
 import torch
+
 from tiny_llm import Attention, EducationalFlashAttention, precompute_freqs_cis
 
 
@@ -14,9 +15,7 @@ def test_flash_attention_exact_match():
     block_size = 8
 
     standard_attn = Attention(dim=dim, n_heads=n_heads)
-    flash_attn = EducationalFlashAttention(
-        dim=dim, n_heads=n_heads, block_size=block_size
-    )
+    flash_attn = EducationalFlashAttention(dim=dim, n_heads=n_heads, block_size=block_size)
 
     # Copy identical weights from standard to flash attention
     flash_attn.wq.weight.data.copy_(standard_attn.wq.weight.data)
@@ -52,9 +51,7 @@ def test_flash_attention_causal_mask_match():
     block_size = 8
 
     standard_attn = Attention(dim=dim, n_heads=n_heads)
-    flash_attn = EducationalFlashAttention(
-        dim=dim, n_heads=n_heads, block_size=block_size
-    )
+    flash_attn = EducationalFlashAttention(dim=dim, n_heads=n_heads, block_size=block_size)
 
     # Copy weights
     flash_attn.wq.weight.data.copy_(standard_attn.wq.weight.data)

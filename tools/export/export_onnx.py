@@ -1,8 +1,10 @@
-import torch
-import os
 import argparse
-from tiny_llm.model import TinyLLM
+import os
+
+import torch
 from tokenizers import Tokenizer
+
+from tiny_llm.model import TinyLLM
 
 
 def export_to_onnx(
@@ -73,7 +75,7 @@ def export_to_onnx(
         quantized_path = output_path.replace(".onnx", "_quantized.onnx")
         if importlib.util.find_spec("onnx") is not None:
             try:
-                from onnxruntime.quantization import quantize_dynamic, QuantType
+                from onnxruntime.quantization import QuantType, quantize_dynamic
 
                 print(f"Quantizing model to {quantized_path} (Int8)...")
                 quantize_dynamic(

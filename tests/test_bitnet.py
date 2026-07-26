@@ -1,7 +1,8 @@
 import os
+
 import torch
 
-from tiny_llm import BitNetLLM, BitLinear, STETernaryQuantize
+from tiny_llm import BitLinear, BitNetLLM, STETernaryQuantize
 
 
 def test_ste_ternary_quantization_values():
@@ -47,9 +48,10 @@ def test_bitnet_llm_forward():
 
 def test_export_bitnet_binary():
     """Verify exporting BitNetLLM to ternary binary format."""
-    import tempfile
     import json
     import subprocess
+    import tempfile
+
     from tiny_llm import ScratchTokenizer
     from tools.export.export_bitnet import export_bitnet
 
@@ -59,15 +61,11 @@ def test_export_bitnet_binary():
         vocab_size=vocab_size,
     )
     actual_vocab_size = len(tokenizer_data["model"]["vocab"])
-    model = BitNetLLM(
-        vocab_size=actual_vocab_size, dim=32, n_layers=2, n_heads=2, ffn_dim=64
-    )
+    model = BitNetLLM(vocab_size=actual_vocab_size, dim=32, n_layers=2, n_heads=2, ffn_dim=64)
 
     with (
         tempfile.NamedTemporaryFile("wb", suffix=".pth", delete=False) as model_f,
-        tempfile.NamedTemporaryFile(
-            "w+", suffix=".json", encoding="utf-8", delete=False
-        ) as tok_f,
+        tempfile.NamedTemporaryFile("w+", suffix=".json", encoding="utf-8", delete=False) as tok_f,
         tempfile.NamedTemporaryFile("wb", suffix=".bin", delete=False) as out_bin_f,
     ):
         torch.save(model.state_dict(), model_f.name)
@@ -78,8 +76,6 @@ def test_export_bitnet_binary():
 
         # Run compiled ./c/run_bitnet executable if present
         if os.path.exists("./c/run_bitnet"):
-            res = subprocess.run(
-                ["./c/run_bitnet", out_bin_f.name], capture_output=True, text=True
-            )
+            res = subprocess.run(["./c/run_bitnet", out_bin_f.name], capture_output=True, text=True)
             assert res.returncode == 0
             assert "0 FP Multiplications" in res.stdout

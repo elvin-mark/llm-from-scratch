@@ -1,9 +1,8 @@
+import torch
 from tokenizers import Tokenizer
 from tokenizers.models import BPE
-from tokenizers.trainers import BpeTrainer
 from tokenizers.pre_tokenizers import Whitespace
-
-import torch
+from tokenizers.trainers import BpeTrainer
 from torch.utils.data import Dataset
 
 
@@ -45,8 +44,9 @@ def prepare_and_train_tokenizer(
 
     print("Training tokenizer...")
     if use_scratch_tokenizer:
-        from tiny_llm.tokenizer import ScratchTokenizer
         import json
+
+        from tiny_llm.tokenizer import ScratchTokenizer
 
         with open(corpus_file, "r", encoding="utf-8") as f:
             text = f.read()

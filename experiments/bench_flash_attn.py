@@ -1,5 +1,7 @@
 import time
+
 import torch
+
 from tiny_llm import Attention, EducationalFlashAttention, precompute_freqs_cis
 
 
@@ -7,9 +9,7 @@ def run_flash_attn_benchmark(
     dim: int = 128, n_heads: int = 4, batch_size: int = 2, block_size: int = 16
 ):
     print("=" * 80)
-    print(
-        "📊 BENCHMARK 2: Standard Attention O(N^2) vs. Educational FlashAttention O(N)"
-    )
+    print("📊 BENCHMARK 2: Standard Attention O(N^2) vs. Educational FlashAttention O(N)")
     print("=" * 80)
     print(
         f"  Configuration: dim={dim}, n_heads={n_heads}, batch_size={batch_size}, tile_block_size={block_size}"
@@ -21,9 +21,7 @@ def run_flash_attn_benchmark(
     print("-" * 80)
 
     standard_attn = Attention(dim=dim, n_heads=n_heads)
-    flash_attn = EducationalFlashAttention(
-        dim=dim, n_heads=n_heads, block_size=block_size
-    )
+    flash_attn = EducationalFlashAttention(dim=dim, n_heads=n_heads, block_size=block_size)
     standard_attn.eval()
     flash_attn.eval()
 
@@ -55,17 +53,11 @@ def run_flash_attn_benchmark(
             flash_time = (time.perf_counter() - t0) / 10.0
 
         speed_ratio = f"{std_time / flash_time:.2f}x" if flash_time > 0 else "N/A"
-        print(
-            f"{seqlen:<10} | {std_matrix_kb:<20.2f} | {flash_tile_kb:<22.2f} | {speed_ratio:<12}"
-        )
+        print(f"{seqlen:<10} | {std_matrix_kb:<20.2f} | {flash_tile_kb:<22.2f} | {speed_ratio:<12}")
 
     print("-" * 80)
-    print(
-        "💡 Key Takeaway: Standard Attention matrix allocation scales quadratically O(N^2),"
-    )
-    print(
-        "   while FlashAttention memory allocation stays CONSTANT at tile size O(B_r^2)."
-    )
+    print("💡 Key Takeaway: Standard Attention matrix allocation scales quadratically O(N^2),")
+    print("   while FlashAttention memory allocation stays CONSTANT at tile size O(B_r^2).")
     print("=" * 80 + "\n")
 
 

@@ -1,19 +1,19 @@
-import struct
-import torch
 import os
+import struct
 import sys
+
+import torch
 
 # Add parent directory to path to import TinyLLM
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tokenizers import Tokenizer
+
 from tiny_llm.model import TinyLLM
 
 
 def export_model_q8(model_path=None, tokenizer_path=None, output_path=None):
     if output_path is None:
-        output_path = (
-            "model_q8.bin" if os.path.basename(os.getcwd()) == "c" else "c/model_q8.bin"
-        )
+        output_path = "model_q8.bin" if os.path.basename(os.getcwd()) == "c" else "c/model_q8.bin"
 
     if model_path is None:
         for p in [

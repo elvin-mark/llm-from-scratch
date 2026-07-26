@@ -1,9 +1,11 @@
+import argparse
 import os
 import time
-import argparse
+
 import torch
 import torch.nn as nn
-from tiny_llm import TinyLLM, NanoLLM
+
+from tiny_llm import NanoLLM, TinyLLM
 
 
 class HybridSVDInt8Linear(nn.Module):
@@ -21,12 +23,8 @@ class HybridSVDInt8Linear(nn.Module):
         self.rank = rank
 
         # Int8 Weight Buffers
-        self.register_buffer(
-            "w_a_int8", torch.zeros((out_features, rank), dtype=torch.int8)
-        )
-        self.register_buffer(
-            "w_b_int8", torch.zeros((rank, in_features), dtype=torch.int8)
-        )
+        self.register_buffer("w_a_int8", torch.zeros((out_features, rank), dtype=torch.int8))
+        self.register_buffer("w_b_int8", torch.zeros((rank, in_features), dtype=torch.int8))
         self.register_buffer("scale_a", torch.tensor(1.0, dtype=torch.float32))
         self.register_buffer("scale_b", torch.tensor(1.0, dtype=torch.float32))
 
@@ -89,12 +87,8 @@ def compress_model_hybrid_svd(model: nn.Module, rank: int = 32) -> nn.Module:
     return model
 
 
-def run_svd_hybrid_benchmark(
-    model_type: str = "tiny", rank: int = 32, save_model: str = None
-):
-    model_name = (
-        "NanoLLM (Weight-Tied)" if model_type == "nano" else "TinyLLM (Standard)"
-    )
+def run_svd_hybrid_benchmark(model_type: str = "tiny", rank: int = 32, save_model: str = None):
+    model_name = "NanoLLM (Weight-Tied)" if model_type == "nano" else "TinyLLM (Standard)"
 
     vocab_size = 4000
     dim = 128
@@ -142,13 +136,9 @@ def run_svd_hybrid_benchmark(
 
     for _name, module in hybrid_model.named_modules():
         if isinstance(module, HybridSVDInt8Linear):
-            p_count = (module.out_features * module.rank) + (
-                module.rank * module.in_features
-            )
+            p_count = (module.out_features * module.rank) + (module.rank * module.in_features)
             hybrid_params += p_count
-            hybrid_bytes += (
-                p_count * 1 + 8
-            )  # 1 byte per int8 weight + 8 bytes for scales
+            hybrid_bytes += p_count * 1 + 8  # 1 byte per int8 weight + 8 bytes for scales
         elif isinstance(module, (nn.Embedding, nn.Linear)):
             for param in module.parameters():
                 if id(param) not in visited_params:
@@ -172,9 +162,7 @@ def run_svd_hybrid_benchmark(
         for _ in range(20):
             fp32_logits = fp32_model(dummy_input)
         fp32_time_ms = ((time.perf_counter() - t0) / 20.0) * 1000.0
-        fp32_loss = criterion(
-            fp32_logits.view(-1, vocab_size), target_labels.view(-1)
-        ).item()
+        fp32_loss = criterion(fp32_logits.view(-1, vocab_size), target_labels.view(-1)).item()
 
         # Hybrid Timing & Loss
         for _ in range(5):
@@ -183,15 +171,11 @@ def run_svd_hybrid_benchmark(
         for _ in range(20):
             hybrid_logits = hybrid_model(dummy_input)
         hybrid_time_ms = ((time.perf_counter() - t0) / 20.0) * 1000.0
-        hybrid_loss = criterion(
-            hybrid_logits.view(-1, vocab_size), target_labels.view(-1)
-        ).item()
+        hybrid_loss = criterion(hybrid_logits.view(-1, vocab_size), target_labels.view(-1)).item()
 
     lines = []
     lines.append("=" * 95)
-    lines.append(
-        f"📊 BENCHMARK: Post-Training Hybrid SVD Decomposition + Int8 ({model_name})"
-    )
+    lines.append(f"📊 BENCHMARK: Post-Training Hybrid SVD Decomposition + Int8 ({model_name})")
     lines.append("=" * 95)
     lines.append(
         f"  Compression Strategy           | {'Parameters':<12} | {'Memory (MB)':<12} | {'Forward (ms)':<12} | {'Loss':<6}"
@@ -231,9 +215,7 @@ if __name__ == "__main__":
         default="tiny",
         help="Model architecture choice: 'tiny' (TinyLLM) or 'nano' (NanoLLM weight-tied)",
     )
-    parser.add_argument(
-        "--rank", type=int, default=32, help="Truncated SVD rank (default: 32)"
-    )
+    parser.add_argument("--rank", type=int, default=32, help="Truncated SVD rank (default: 32)")
     parser.add_argument(
         "--save-model",
         type=str,
@@ -242,6 +224,4 @@ if __name__ == "__main__":
     )
 
     args = parser.parse_args()
-    run_svd_hybrid_benchmark(
-        model_type=args.model, rank=args.rank, save_model=args.save_model
-    )
+    run_svd_hybrid_benchmark(model_type=args.model, rank=args.rank, save_model=args.save_model)

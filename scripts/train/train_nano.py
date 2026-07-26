@@ -1,5 +1,6 @@
-import os
 import argparse
+import os
+
 import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader
@@ -23,15 +24,11 @@ def train_nano(
     print(f"  Output Checkpoint: {output_path}")
 
     if not os.path.exists(corpus_path) or not os.path.exists(tokenizer_path):
-        print(
-            "❌ Dataset or Tokenizer not found. Please run scripts/data/prepare_data.py first."
-        )
+        print("❌ Dataset or Tokenizer not found. Please run scripts/data/prepare_data.py first.")
         return
 
     # Load dataset
-    dataset = SentencesDataset(
-        file_path=corpus_path, tokenizer_path=tokenizer_path, max_length=64
-    )
+    dataset = SentencesDataset(file_path=corpus_path, tokenizer_path=tokenizer_path, max_length=64)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
     vocab_size = dataset.tokenizer.get_vocab_size()
 
@@ -74,9 +71,7 @@ def train_nano(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Train weight-tied NanoLLM model.")
-    parser.add_argument(
-        "--corpus", type=str, default="data/corpus.txt", help="Path to text corpus"
-    )
+    parser.add_argument("--corpus", type=str, default="data/corpus.txt", help="Path to text corpus")
     parser.add_argument(
         "--tokenizer",
         type=str,
@@ -89,9 +84,7 @@ if __name__ == "__main__":
         default="checkpoints/nano_llm.pth",
         help="Output model checkpoint path",
     )
-    parser.add_argument(
-        "--epochs", type=int, default=10, help="Number of training epochs"
-    )
+    parser.add_argument("--epochs", type=int, default=10, help="Number of training epochs")
     parser.add_argument("--batch-size", type=int, default=16, help="Batch size")
     parser.add_argument("--lr", type=float, default=1e-3, help="Learning rate")
 

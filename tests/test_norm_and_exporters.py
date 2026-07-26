@@ -1,5 +1,6 @@
 import struct
 import tempfile
+
 import torch
 
 from tiny_llm import RMSNorm
@@ -35,17 +36,13 @@ def test_export_c_binary_header_format():
     # Create dummy model checkpoint and tokenizer file
     with (
         tempfile.NamedTemporaryFile("wb", suffix=".pth", delete=False) as model_f,
-        tempfile.NamedTemporaryFile(
-            "w+", suffix=".json", encoding="utf-8", delete=False
-        ) as tok_f,
+        tempfile.NamedTemporaryFile("w+", suffix=".json", encoding="utf-8", delete=False) as tok_f,
         tempfile.NamedTemporaryFile("wb", suffix=".bin", delete=False) as out_model_f,
         tempfile.NamedTemporaryFile("wb", suffix=".bin", delete=False) as out_vocab_f,
     ):
-        from tiny_llm import TinyLLM, ScratchTokenizer
+        from tiny_llm import ScratchTokenizer, TinyLLM
 
-        tokenizer_data = ScratchTokenizer.train(
-            "dummy text for export test", vocab_size=50
-        )
+        tokenizer_data = ScratchTokenizer.train("dummy text for export test", vocab_size=50)
         actual_vocab_size = len(tokenizer_data["model"]["vocab"])
 
         model = TinyLLM(

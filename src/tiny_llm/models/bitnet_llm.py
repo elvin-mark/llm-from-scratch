@@ -1,10 +1,11 @@
+import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import math
 
 from tiny_llm.configs import TinyLLMConfig
-from tiny_llm.modules import RMSNorm, precompute_freqs_cis, apply_rotary_emb
+from tiny_llm.modules import RMSNorm, apply_rotary_emb, precompute_freqs_cis
 from tiny_llm.modules.bitlinear import BitLinear
 
 
@@ -109,9 +110,7 @@ class BitNetLLM(nn.Module):
             max_seq_len = config.max_seq_len
 
         self.tok_embeddings = nn.Embedding(vocab_size, dim)
-        self.layers = nn.ModuleList(
-            [BitNetBlock(dim, n_heads, ffn_dim) for _ in range(n_layers)]
-        )
+        self.layers = nn.ModuleList([BitNetBlock(dim, n_heads, ffn_dim) for _ in range(n_layers)])
         self.norm = RMSNorm(dim)
         self.output = nn.Linear(dim, vocab_size, bias=False)
         self.freqs_cis = precompute_freqs_cis(dim // n_heads, max_seq_len * 2)
@@ -123,9 +122,7 @@ class BitNetLLM(nn.Module):
 
         mask = None
         if seqlen > 1:
-            mask = torch.full(
-                (1, 1, seqlen, seqlen), float("-inf"), device=tokens.device
-            )
+            mask = torch.full((1, 1, seqlen, seqlen), float("-inf"), device=tokens.device)
             mask = torch.triu(mask, diagonal=1)
 
         for layer in self.layers:

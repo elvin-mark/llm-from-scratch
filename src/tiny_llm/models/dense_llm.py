@@ -1,7 +1,8 @@
 import torch
 import torch.nn as nn
+
 from tiny_llm.configs import TinyLLMConfig
-from tiny_llm.modules import RMSNorm, Attention, FeedForward, precompute_freqs_cis
+from tiny_llm.modules import Attention, FeedForward, RMSNorm, precompute_freqs_cis
 
 
 class TransformerBlock(nn.Module):
@@ -61,9 +62,7 @@ class TinyLLM(nn.Module):
 
         mask = None
         if seqlen > 1:
-            mask = torch.full(
-                (1, 1, seqlen, seqlen), float("-inf"), device=tokens.device
-            )
+            mask = torch.full((1, 1, seqlen, seqlen), float("-inf"), device=tokens.device)
             mask = torch.triu(mask, diagonal=1)
 
         for layer in self.layers:

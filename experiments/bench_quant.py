@@ -1,8 +1,9 @@
 import os
 import tempfile
+
 import torch
 
-from tiny_llm import TinyLLM, ScratchTokenizer
+from tiny_llm import ScratchTokenizer, TinyLLM
 from tools.export.export_c import export_model
 from tools.export.export_q8 import export_model_q8
 
@@ -21,9 +22,7 @@ def run_quantization_benchmark():
 
     with (
         tempfile.NamedTemporaryFile("wb", suffix=".pth", delete=False) as model_f,
-        tempfile.NamedTemporaryFile(
-            "w+", suffix=".json", encoding="utf-8", delete=False
-        ) as tok_f,
+        tempfile.NamedTemporaryFile("w+", suffix=".json", encoding="utf-8", delete=False) as tok_f,
         tempfile.NamedTemporaryFile("wb", suffix=".bin", delete=False) as fp32_bin_f,
         tempfile.NamedTemporaryFile("wb", suffix=".bin", delete=False) as q8_bin_f,
         tempfile.NamedTemporaryFile("wb", suffix=".bin", delete=False) as vocab_bin_f,
@@ -73,9 +72,7 @@ def run_quantization_benchmark():
         f"  Precision / Format  | {'Binary File Size (MB)':<22} | {'Relative Footprint':<20} | {'Space Savings':<14}"
     )
     print("-" * 80)
-    print(
-        f"  FP32 (Standard C)   | {fp32_size_mb:<22.2f} | 100.0%               | Baseline"
-    )
+    print(f"  FP32 (Standard C)   | {fp32_size_mb:<22.2f} | 100.0%               | Baseline")
     print(
         f"  Int8 (Quantized C)  | {q8_size_mb:<22.2f} | {(q8_size_mb / fp32_size_mb) * 100:<19.2f}% | {compression_ratio:.1f}% Smaller"
     )

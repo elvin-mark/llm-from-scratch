@@ -1,8 +1,8 @@
-import torch
 import numpy as np
+import torch
 
-from tiny_llm import TinyLLM
 from scripts.eval.inference import apply_rotary_emb as numpy_apply_rope
+from tiny_llm import TinyLLM
 
 
 def test_numpy_rope_equivalence():
@@ -53,10 +53,7 @@ def test_numpy_vs_pytorch_forward_logits():
         pytorch_logits = model(tokens)[0, -1].numpy()
 
     # 2. Extract weights into NumPy dict
-    w = {
-        k: v.detach().cpu().numpy().astype(np.float32)
-        for k, v in model.state_dict().items()
-    }
+    w = {k: v.detach().cpu().numpy().astype(np.float32) for k, v in model.state_dict().items()}
 
     # 3. Pure NumPy Forward Pass (extract from scripts/inference.py logic)
     token_list = tokens[0].tolist()
@@ -71,9 +68,7 @@ def test_numpy_vs_pytorch_forward_logits():
         )
     )
     mask = (
-        np.triu(np.full((s, s), -np.inf, dtype=np.float32), k=1)[None, None, :, :]
-        if s > 1
-        else 0
+        np.triu(np.full((s, s), -np.inf, dtype=np.float32), k=1)[None, None, :, :] if s > 1 else 0
     )
 
     layer_idx = 0
@@ -109,11 +104,7 @@ def test_numpy_vs_pytorch_forward_logits():
         )
         layer_idx += 1
 
-    h = (
-        h
-        * (1.0 / np.sqrt(np.mean(h**2, axis=-1, keepdims=True) + 1e-6))
-        * w["norm.weight"]
-    )
+    h = h * (1.0 / np.sqrt(np.mean(h**2, axis=-1, keepdims=True) + 1e-6)) * w["norm.weight"]
     numpy_logits = (h @ w["output.weight"].T)[0, -1]
 
     # Check exact match down to 1e-4 tolerance

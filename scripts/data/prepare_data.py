@@ -1,11 +1,10 @@
-import os
 import argparse
+import os
+
 from tiny_llm.data import prepare_and_train_tokenizer
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Prepare dataset and train BPE tokenizer."
-    )
+    parser = argparse.ArgumentParser(description="Prepare dataset and train BPE tokenizer.")
     parser.add_argument("input_file", type=str, help="Path to the input TSV file")
     parser.add_argument(
         "--corpus-file",

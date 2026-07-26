@@ -1,23 +1,24 @@
-import os
 import json
+import os
 import tempfile
+
 import torch
 
-from tiny_llm import ScratchTokenizer
 from scripts.train.distill_train import train_distilled_student
+from tiny_llm import ScratchTokenizer
 
 
 def test_distillation_student_training_loop():
     """Verify that train_distilled_student trains TinyLLM on synthetic corpus and saves checkpoint."""
-    corpus_content = "톰은 메리가 보는 앞에서 책을 읽기 시작했다.\n메리는 웃으며 톰의 이야기를 들어주었다.\n"
+    corpus_content = (
+        "톰은 메리가 보는 앞에서 책을 읽기 시작했다.\n메리는 웃으며 톰의 이야기를 들어주었다.\n"
+    )
 
     with (
         tempfile.NamedTemporaryFile(
             "w+", suffix=".txt", encoding="utf-8", delete=False
         ) as corpus_f,
-        tempfile.NamedTemporaryFile(
-            "w+", suffix=".json", encoding="utf-8", delete=False
-        ) as tok_f,
+        tempfile.NamedTemporaryFile("w+", suffix=".json", encoding="utf-8", delete=False) as tok_f,
         tempfile.NamedTemporaryFile("wb", suffix=".pth", delete=False) as model_f,
     ):
         corpus_f.write(corpus_content)
@@ -37,8 +38,6 @@ def test_distillation_student_training_loop():
             use_moe=False,
         )
 
-        assert os.path.exists(model_f.name), (
-            "Distilled student model checkpoint must be created."
-        )
+        assert os.path.exists(model_f.name), "Distilled student model checkpoint must be created."
         checkpoint = torch.load(model_f.name, map_location="cpu", weights_only=True)
         assert "tok_embeddings.weight" in checkpoint

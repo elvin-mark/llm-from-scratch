@@ -1,4 +1,5 @@
 import math
+
 import torch
 import torch.nn as nn
 
@@ -46,8 +47,7 @@ class LoRALinear(nn.Module):
         Merges low-rank weights (W_0 + (alpha/r) * B @ A) into a single nn.Linear.
         """
         merged_weight = (
-            self.base_linear.weight.data
-            + (self.lora_B.data @ self.lora_A.data) * self.scaling
+            self.base_linear.weight.data + (self.lora_B.data @ self.lora_A.data) * self.scaling
         )
         merged_linear = nn.Linear(
             self.base_linear.in_features,
@@ -77,9 +77,7 @@ def inject_lora(
         for attr in target_modules:
             if hasattr(module, attr):
                 target_layer = getattr(module, attr)
-                if isinstance(target_layer, nn.Linear) and not isinstance(
-                    target_layer, LoRALinear
-                ):
+                if isinstance(target_layer, nn.Linear) and not isinstance(target_layer, LoRALinear):
                     setattr(
                         module,
                         attr,

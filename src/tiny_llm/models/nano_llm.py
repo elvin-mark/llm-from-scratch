@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+
 from tiny_llm.models.dense_llm import TransformerBlock
 from tiny_llm.modules.norm import RMSNorm
 from tiny_llm.modules.rope import precompute_freqs_cis
@@ -33,10 +34,7 @@ class NanoLLM(nn.Module):
         self.freqs_cis = precompute_freqs_cis(dim // n_heads, max_seq_len * 2)
 
         self.layers = nn.ModuleList(
-            [
-                TransformerBlock(dim=dim, n_heads=n_heads, ffn_dim=ffn_dim)
-                for _ in range(n_layers)
-            ]
+            [TransformerBlock(dim=dim, n_heads=n_heads, ffn_dim=ffn_dim) for _ in range(n_layers)]
         )
 
         self.norm = RMSNorm(dim)

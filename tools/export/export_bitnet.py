@@ -1,5 +1,6 @@
-import struct
 import argparse
+import struct
+
 import torch
 
 from tiny_llm import BitNetLLM, ScratchTokenizer, STETernaryQuantize
@@ -18,9 +19,7 @@ def export_bitnet(model_path: str, tokenizer_path: str, output_path: str):
     # Load PyTorch checkpoint
     checkpoint = torch.load(model_path, map_location="cpu", weights_only=True)
     dim = checkpoint["tok_embeddings.weight"].shape[1]
-    n_layers = len(
-        [k for k in checkpoint.keys() if k.endswith(".attention_norm.weight")]
-    )
+    n_layers = len([k for k in checkpoint.keys() if k.endswith(".attention_norm.weight")])
     n_heads = 4
     ffn_dim = checkpoint["layers.0.feed_forward.w1.weight"].shape[0]
     max_seq_len = 128
@@ -61,9 +60,7 @@ def export_bitnet(model_path: str, tokenizer_path: str, output_path: str):
             layer = model.layers[i]
 
             # Attention Norm (FP32)
-            f.write(
-                layer.attention_norm.weight.detach().numpy().astype("float32").tobytes()
-            )
+            f.write(layer.attention_norm.weight.detach().numpy().astype("float32").tobytes())
 
             # Ternarize Attention Weights to int8 {-1, 0, +1}
             for proj in [
@@ -113,15 +110,11 @@ def export_bitnet(model_path: str, tokenizer_path: str, output_path: str):
                 f.write(struct.pack("i", len(token_str)))
                 f.write(token_str)
 
-    print(
-        f"✅ Successfully exported 1.58-bit binary to '{output_path}' and vocabulary files!"
-    )
+    print(f"✅ Successfully exported 1.58-bit binary to '{output_path}' and vocabulary files!")
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Export BitNetLLM model to ternary int8 binary."
-    )
+    parser = argparse.ArgumentParser(description="Export BitNetLLM model to ternary int8 binary.")
     parser.add_argument("--model-path", default="checkpoints/bitnet_llm.pth")
     parser.add_argument("--tokenizer-path", default="checkpoints/tokenizer.json")
     parser.add_argument("--output-path", default="checkpoints/bitnet_model.bin")

@@ -1,6 +1,8 @@
 import time
+
 import torch
-from tiny_llm import TinyLLM, MoELLM, MoELLMConfig
+
+from tiny_llm import MoELLM, MoELLMConfig, TinyLLM
 
 
 def run_moe_benchmark():
@@ -46,9 +48,7 @@ def run_moe_benchmark():
 
     # Active parameters calculation (Dense uses 1 MLP, MoE uses 2 of 8 MLPs per token)
     single_mlp_params = dim * ffn_dim * 3  # w1, w2, w3
-    moe_active_params = moe_total_params - (
-        n_layers * (num_experts - top_k) * single_mlp_params
-    )
+    moe_active_params = moe_total_params - (n_layers * (num_experts - top_k) * single_mlp_params)
 
     # Measure inference execution time
     dummy_input = torch.randint(0, vocab_size, (2, 32))
@@ -81,12 +81,8 @@ def run_moe_benchmark():
         f"  Sparse (MoELLM, 8x2)  | {moe_total_params:<16,} | {moe_active_params:<18,} | {moe_time * 1000:<12.2f}"
     )
     print("-" * 80)
-    print(
-        "💡 Key Takeaway: MoELLM increases total model capacity by ~3.5x while active compute"
-    )
-    print(
-        f"   per token stays lean (only {top_k} of {num_experts} experts active per token)."
-    )
+    print("💡 Key Takeaway: MoELLM increases total model capacity by ~3.5x while active compute")
+    print(f"   per token stays lean (only {top_k} of {num_experts} experts active per token).")
     print("=" * 80 + "\n")
 
 

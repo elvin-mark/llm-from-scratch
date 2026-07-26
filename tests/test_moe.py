@@ -1,10 +1,11 @@
 import torch
+
 from tiny_llm import (
     GroupedQueryAttention,
-    MoERouter,
     MoEFeedForward,
     MoELLM,
     MoELLMConfig,
+    MoERouter,
     precompute_freqs_cis,
 )
 
@@ -55,9 +56,7 @@ def test_moe_feedforward():
     top_k = 2
     batch, seqlen = 2, 16
 
-    moe_ffn = MoEFeedForward(
-        dim=dim, hidden_dim=hidden_dim, num_experts=num_experts, top_k=top_k
-    )
+    moe_ffn = MoEFeedForward(dim=dim, hidden_dim=hidden_dim, num_experts=num_experts, top_k=top_k)
     moe_ffn.eval()
 
     x = torch.randn(batch, seqlen, dim)

@@ -1,11 +1,12 @@
-import os
 import argparse
+import os
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.utils.data import DataLoader
 
-from tiny_llm import TinyLLM, BitNetLLM, SentencesDataset
+from tiny_llm import BitNetLLM, SentencesDataset, TinyLLM
 
 
 def train_bitnet(
@@ -23,22 +24,16 @@ def train_bitnet(
     print(f"  Device:         {device}")
     print(f"  Corpus:         {corpus_path}")
     print(f"  Tokenizer:      {tokenizer_path}")
-    print(
-        f"  Teacher Model:  {teacher_path if teacher_path else 'None (Training from Scratch)'}"
-    )
+    print(f"  Teacher Model:  {teacher_path if teacher_path else 'None (Training from Scratch)'}")
     print(f"  Learning Rate:  {lr} (Higher LR for STE threshold crossing)")
     print("  Weight Decay:   0.0 (Prevents ternary trapping at 0)")
 
     if not os.path.exists(corpus_path) or not os.path.exists(tokenizer_path):
-        print(
-            "❌ Dataset or Tokenizer not found. Please run scripts/data/prepare_data.py first."
-        )
+        print("❌ Dataset or Tokenizer not found. Please run scripts/data/prepare_data.py first.")
         return
 
     # Load dataset
-    dataset = SentencesDataset(
-        file_path=corpus_path, tokenizer_path=tokenizer_path, max_length=64
-    )
+    dataset = SentencesDataset(file_path=corpus_path, tokenizer_path=tokenizer_path, max_length=64)
     dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
     vocab_size = dataset.tokenizer.get_vocab_size()
 
@@ -73,9 +68,7 @@ def train_bitnet(
 
     # Disable weight decay to prevent trapping master weights at zero
     optimizer = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.0)
-    criterion_ce = nn.CrossEntropyLoss(
-        ignore_index=dataset.tokenizer.token_to_id("[PAD]")
-    )
+    criterion_ce = nn.CrossEntropyLoss(ignore_index=dataset.tokenizer.token_to_id("[PAD]"))
 
     model.train()
     total_steps = epochs * len(dataloader)
@@ -117,18 +110,14 @@ def train_bitnet(
 
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     torch.save(model.state_dict(), output_path)
-    print(
-        f"\n✅ 1.58-bit BitNet training complete! Saved checkpoint to '{output_path}'."
-    )
+    print(f"\n✅ 1.58-bit BitNet training complete! Saved checkpoint to '{output_path}'.")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
         description="Train 1.58-bit BitNet b1.58 Model with Distillation."
     )
-    parser.add_argument(
-        "--corpus", type=str, default="data/corpus.txt", help="Path to text corpus"
-    )
+    parser.add_argument("--corpus", type=str, default="data/corpus.txt", help="Path to text corpus")
     parser.add_argument(
         "--tokenizer",
         type=str,
@@ -147,9 +136,7 @@ if __name__ == "__main__":
         default="checkpoints/tiny_llm.pth",
         help="Optional Float32 teacher model checkpoint for distillation",
     )
-    parser.add_argument(
-        "--epochs", type=int, default=10, help="Number of training epochs"
-    )
+    parser.add_argument("--epochs", type=int, default=10, help="Number of training epochs")
     parser.add_argument("--batch-size", type=int, default=16, help="Batch size")
     parser.add_argument(
         "--lr",

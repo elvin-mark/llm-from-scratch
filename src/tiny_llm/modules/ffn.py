@@ -47,9 +47,7 @@ class MoEFeedForward(nn.Module):
         self.num_experts = num_experts
         self.top_k = top_k
         self.router = MoERouter(dim, num_experts, top_k)
-        self.experts = nn.ModuleList(
-            [FeedForward(dim, hidden_dim) for _ in range(num_experts)]
-        )
+        self.experts = nn.ModuleList([FeedForward(dim, hidden_dim) for _ in range(num_experts)])
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         bsz, seqlen, dim = x.shape

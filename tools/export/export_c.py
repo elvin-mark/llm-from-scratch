@@ -1,25 +1,21 @@
-import struct
-import torch
 import os
+import struct
 import sys
+
+import torch
 
 # Add parent directory to path to import TinyLLM
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from tokenizers import Tokenizer
+
 from tiny_llm.model import TinyLLM
 
 
-def export_model(
-    model_path=None, tokenizer_path=None, output_path=None, vocab_path=None
-):
+def export_model(model_path=None, tokenizer_path=None, output_path=None, vocab_path=None):
     if output_path is None:
-        output_path = (
-            "model.bin" if os.path.basename(os.getcwd()) == "c" else "c/model.bin"
-        )
+        output_path = "model.bin" if os.path.basename(os.getcwd()) == "c" else "c/model.bin"
     if vocab_path is None:
-        vocab_path = (
-            "vocab.bin" if os.path.basename(os.getcwd()) == "c" else "c/vocab.bin"
-        )
+        vocab_path = "vocab.bin" if os.path.basename(os.getcwd()) == "c" else "c/vocab.bin"
 
     if model_path is None:
         for p in [
@@ -111,9 +107,7 @@ def export_model(
             f.write(struct.pack("i", len(token_str)))
             f.write(token_str)
 
-    print(
-        f"Done! Saved {output_path} and {vocab_path}. You can now execute the C code."
-    )
+    print(f"Done! Saved {output_path} and {vocab_path}. You can now execute the C code.")
 
 
 if __name__ == "__main__":

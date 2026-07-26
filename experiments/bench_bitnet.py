@@ -1,6 +1,8 @@
 import time
+
 import torch
-from tiny_llm import TinyLLM, BitNetLLM
+
+from tiny_llm import BitNetLLM, TinyLLM
 
 
 def run_bitnet_benchmark():
@@ -50,16 +52,12 @@ def run_bitnet_benchmark():
 
     # Memory in MB: FP32 = 4 bytes/param. BitNet = 0.25 bytes/param (2 bits packed) for linear weights.
     fp32_mem_mb = (fp32_total_params * 4.0) / (1024.0 * 1024.0)
-    bitnet_mem_mb = ((total_ternary_params * 0.25) + (non_ternary_params * 4.0)) / (
-        1024.0 * 1024.0
-    )
+    bitnet_mem_mb = ((total_ternary_params * 0.25) + (non_ternary_params * 4.0)) / (1024.0 * 1024.0)
     space_savings = (1.0 - (bitnet_mem_mb / fp32_mem_mb)) * 100.0
 
     # Calculate Multiply-Accumulate (MAC) vs Addition Operations
     fp32_fp_multiplications = total_ternary_params
-    bitnet_fp_multiplications = (
-        0  # Replaced by integer additions/subtractions in BitLinear!
-    )
+    bitnet_fp_multiplications = 0  # Replaced by integer additions/subtractions in BitLinear!
 
     # Benchmark Forward Pass Latency
     dummy_input = torch.randint(0, vocab_size, (batch_size, seqlen))
@@ -92,9 +90,7 @@ def run_bitnet_benchmark():
         f"  1.58-Bit BitNet   | {bitnet_total_params:<14,} | {bitnet_mem_mb:<18.2f} MB | {bitnet_fp_multiplications:<20} | {bitnet_time_ms:<15.2f}"
     )
     print("-" * 85)
-    print(
-        f"💡 Key Takeaway: BitNet b1.58 reduces weight memory footprint by {space_savings:.1f}%,"
-    )
+    print(f"💡 Key Takeaway: BitNet b1.58 reduces weight memory footprint by {space_savings:.1f}%,")
     print(
         f"   and completely ELIMINATES floating-point multiplications ({fp32_fp_multiplications:,} FP MACs -> 0 FP MACs) in all linear projections!"
     )

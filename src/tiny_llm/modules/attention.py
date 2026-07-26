@@ -1,7 +1,9 @@
 import math
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+
 from .rope import apply_rotary_emb
 
 
@@ -150,13 +152,9 @@ class EducationalFlashAttention(nn.Module):
             q_len = i_end - i_start
 
             # Initialize running max (m), running sum (l), and output accumulator (acc)
-            m_i = torch.full(
-                (bsz, self.n_heads, q_len, 1), float("-inf"), device=x.device
-            )
+            m_i = torch.full((bsz, self.n_heads, q_len, 1), float("-inf"), device=x.device)
             l_i = torch.zeros((bsz, self.n_heads, q_len, 1), device=x.device)
-            acc_i = torch.zeros(
-                (bsz, self.n_heads, q_len, self.head_dim), device=x.device
-            )
+            acc_i = torch.zeros((bsz, self.n_heads, q_len, self.head_dim), device=x.device)
 
             # Process each Key/Value block j
             for j_start in range(0, seqlen, self.block_size):

@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
-from tiny_llm import TinyLLM, LoRALinear, inject_lora, merge_lora
+
+from tiny_llm import LoRALinear, TinyLLM, inject_lora, merge_lora
 
 
 def test_lora_step_zero_equivalence():
@@ -26,20 +27,14 @@ def test_inject_lora_parameter_freezing():
     model = inject_lora(model, r=4, target_modules=("wq", "wv"))
 
     trainable_params = [name for name, p in model.named_parameters() if p.requires_grad]
-    frozen_params = [
-        name for name, p in model.named_parameters() if not p.requires_grad
-    ]
+    frozen_params = [name for name, p in model.named_parameters() if not p.requires_grad]
 
     assert len(trainable_params) > 0, "There should be trainable LoRA parameters."
     assert all("lora_A" in p or "lora_B" in p for p in trainable_params), (
         "Only lora_A and lora_B should be trainable."
     )
-    assert any("tok_embeddings" in p for p in frozen_params), (
-        "Base embeddings should be frozen."
-    )
-    assert any("output" in p for p in frozen_params), (
-        "Base output projection should be frozen."
-    )
+    assert any("tok_embeddings" in p for p in frozen_params), "Base embeddings should be frozen."
+    assert any("output" in p for p in frozen_params), "Base output projection should be frozen."
 
 
 def test_merge_lora_equivalence():

@@ -1,6 +1,8 @@
-import torch
 import math
-from tiny_llm.model import TinyLLM, Attention, apply_rotary_emb, precompute_freqs_cis
+
+import torch
+
+from tiny_llm.model import Attention, TinyLLM, apply_rotary_emb, precompute_freqs_cis
 
 
 def test_rope_shapes():

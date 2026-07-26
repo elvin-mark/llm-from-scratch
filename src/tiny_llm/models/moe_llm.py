@@ -1,10 +1,11 @@
 import torch
 import torch.nn as nn
+
 from tiny_llm.configs import MoELLMConfig
 from tiny_llm.modules import (
-    RMSNorm,
     GroupedQueryAttention,
     MoEFeedForward,
+    RMSNorm,
     precompute_freqs_cis,
 )
 
@@ -25,9 +26,7 @@ class MoETransformerBlock(nn.Module):
     ):
         super().__init__()
         self.attention = GroupedQueryAttention(dim, n_heads, n_kv_heads)
-        self.feed_forward = MoEFeedForward(
-            dim, ffn_dim, num_experts=num_experts, top_k=top_k
-        )
+        self.feed_forward = MoEFeedForward(dim, ffn_dim, num_experts=num_experts, top_k=top_k)
         self.attention_norm = RMSNorm(dim)
         self.ffn_norm = RMSNorm(dim)
 
@@ -70,9 +69,7 @@ class MoELLM(nn.Module):
         self.tok_embeddings = nn.Embedding(vocab_size, dim)
         self.layers = nn.ModuleList(
             [
-                MoETransformerBlock(
-                    dim, n_heads, n_kv_heads, ffn_dim, num_experts, top_k
-                )
+                MoETransformerBlock(dim, n_heads, n_kv_heads, ffn_dim, num_experts, top_k)
                 for _ in range(n_layers)
             ]
         )
@@ -87,9 +84,7 @@ class MoELLM(nn.Module):
 
         mask = None
         if seqlen > 1:
-            mask = torch.full(
-                (1, 1, seqlen, seqlen), float("-inf"), device=tokens.device
-            )
+            mask = torch.full((1, 1, seqlen, seqlen), float("-inf"), device=tokens.device)
             mask = torch.triu(mask, diagonal=1)
 
         for layer in self.layers:
