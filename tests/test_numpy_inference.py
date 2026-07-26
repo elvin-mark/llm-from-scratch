@@ -2,7 +2,7 @@ import torch
 import numpy as np
 
 from tiny_llm import TinyLLM
-from scripts.inference import apply_rotary_emb as numpy_apply_rope
+from scripts.eval.inference import apply_rotary_emb as numpy_apply_rope
 
 
 def test_numpy_rope_equivalence():

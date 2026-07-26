@@ -29,7 +29,7 @@ def train_lora():
 
     if not os.path.exists(corpus_path) or not os.path.exists(tokenizer_path):
         print(
-            "❌ Dataset or Tokenizer not found. Please run scripts/prepare_data.py first."
+            "❌ Dataset or Tokenizer not found. Please run scripts/data/prepare_data.py first."
         )
         return
 

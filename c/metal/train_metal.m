@@ -49,9 +49,9 @@ int main(int argc, const char* argv[]) {
         printf("  Metal GPU Device: %s (Unified Memory Architecture)\n\n", [[device name] UTF8String]);
 
         NSError* error = nil;
-        NSString* shaderSource = [NSString stringWithContentsOfFile:@"c/metal_train_kernel.metal" encoding:NSUTF8StringEncoding error:&error];
+        NSString* shaderSource = [NSString stringWithContentsOfFile:@"c/metal/metal_train_kernel.metal" encoding:NSUTF8StringEncoding error:&error];
         if (error) {
-            printf("❌ Could not load c/metal_train_kernel.metal: %s\n", [[error localizedDescription] UTF8String]);
+            printf("❌ Could not load c/metal/metal_train_kernel.metal: %s\n", [[error localizedDescription] UTF8String]);
             return 1;
         }
 

@@ -4,7 +4,7 @@ import tempfile
 import torch
 
 from tiny_llm import ScratchTokenizer
-from scripts.distill_train import train_distilled_student
+from scripts.train.distill_train import train_distilled_student
 
 
 def test_distillation_student_training_loop():

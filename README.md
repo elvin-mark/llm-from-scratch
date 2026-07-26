@@ -53,17 +53,17 @@ llm-from-scratch/
 
 If you are interested in exactly how the mathematics and auto-regressive flows of this model work, we provide detailed markdown documentation with Mermaid flowchart diagrams:
 
-- [Architecture Breakdown](docs/architecture.md): Deep dive into Pre-RMSNorm, RoPE, and SwiGLU FFNs.
-- [Advanced Architecture (GQA & MoE)](docs/moe_gqa.md): Theoretical breakdown of Grouped Query Attention and Mixture-of-Experts routing.
-- [Educational FlashAttention](docs/flash_attention.md): Block-tiled online softmax algorithm for zero N x N matrix memory allocation.
-- [LoRA Fine-Tuning](docs/lora.md): Low-Rank Adaptation theory, rank decomposition, and weight merging mechanics.
-- [Sequence-Level Knowledge Distillation](docs/distillation.md): Transferring intelligence from 7B+ teacher LLMs (Qwen/DeepSeek) into TinyLLM.
-- [1.58-Bit BitNet b1.58](docs/bitnet.md): Ternary weight quantization {-1, 0, +1}, STE autograd, and addition-only matrix algebra.
-- [Multi-Head Latent Attention (MLA)](docs/mla.md): DeepSeek's low-rank latent KV compression (c^KV) and decoupled RoPE keys.
-- [NanoLLM Weight Tying](docs/nano_llm.md): Memory sharing between token embedding and output head for ultra-compact LLMs.
-- [Mathematical Foundations](docs/math.md): The theoretical mathematical formulas defining the entire forward pass.
-- [Training Pipeline](docs/training.md): Overview of dataset ingestion, hyperparameter choices, and the CrossEntropy backward pass loop.
-- [Tokenizer Architecture](docs/tokenizer.md): Explanation of the Byte-Pair Encoding (BPE) training and inference algorithms.
+- [Architecture Breakdown](docs/architecture/architecture.md): Deep dive into Pre-RMSNorm, RoPE, and SwiGLU FFNs.
+- [Advanced Architecture (GQA & MoE)](docs/architecture/moe_gqa.md): Theoretical breakdown of Grouped Query Attention and Mixture-of-Experts routing.
+- [Educational FlashAttention](docs/architecture/flash_attention.md): Block-tiled online softmax algorithm for zero N x N matrix memory allocation.
+- [Multi-Head Latent Attention (MLA)](docs/architecture/mla.md): DeepSeek's low-rank latent KV compression (c^KV) and decoupled RoPE keys.
+- [NanoLLM Weight Tying](docs/architecture/nano_llm.md): Memory sharing between token embedding and output head for ultra-compact LLMs.
+- [1.58-Bit BitNet b1.58](docs/quantization/bitnet.md): Ternary weight quantization {-1, 0, +1}, STE autograd, and addition-only matrix algebra.
+- [Training Pipeline](docs/training/training.md): Overview of dataset ingestion, hyperparameter choices, and the CrossEntropy backward pass loop.
+- [LoRA Fine-Tuning](docs/training/lora.md): Low-Rank Adaptation theory, rank decomposition, and weight merging mechanics.
+- [Sequence-Level Knowledge Distillation](docs/training/distillation.md): Transferring intelligence from 7B+ teacher LLMs (Qwen/DeepSeek) into TinyLLM.
+- [Mathematical Foundations](docs/theory/math.md): The theoretical mathematical formulas defining the entire forward pass.
+- [Tokenizer Architecture](docs/theory/tokenizer.md): Explanation of the Byte-Pair Encoding (BPE) training and inference algorithms.
 - [C Inference Architecture](c/ARCH.md): Explanation of the memory-mapped C inference engines and dynamic Int8 quantization.
 
 ---
@@ -96,7 +96,7 @@ bunzip2 ./kor_sentences.tsv.bz2
 
 Then train the BPE tokenizer and generate the text corpus using `uv run`:
 ```bash
-uv run python scripts/prepare_data.py ./kor_sentences.tsv
+uv run python scripts/data/prepare_data.py ./kor_sentences.tsv
 ```
 This produces `data/corpus.txt` and `checkpoints/tokenizer.json`.
 
@@ -106,25 +106,16 @@ This produces `data/corpus.txt` and `checkpoints/tokenizer.json`.
 
 To train the `TinyLLM` model on the generated corpus:
 ```bash
-uv run python scripts/train.py
+uv run python scripts/train/train.py
 ```
 This will train the model and save the weights to `checkpoints/tiny_llm.pth`.
 
-### 5. Generate Text
+### 5. Generate Text & Inference
 
-Once trained, generate sentences autoregressively:
-```bash
-uv run python scripts/generate.py
-```
-
-*(Optional: Generate text using the pure-Python educational tokenizer by appending `--scratch-tokenizer`)*
-
-### 6. NumPy-Only Inference (Pure NumPy)
-
-For a hyper-compact, lightweight inference option that bypasses PyTorch dependencies and runs entirely on `numpy`, you can use `scripts/inference.py`:
+For a hyper-compact, lightweight inference option that bypasses PyTorch dependencies and runs entirely on `numpy`, you can use `scripts/eval/inference.py`:
 
 ```bash
-uv run python scripts/inference.py --weights checkpoints/tiny_llm.pth --vocab-size 4000 --prompt "안녕하세요" --tokens 40
+uv run python scripts/eval/inference.py --weights checkpoints/tiny_llm.pth --vocab-size 4000 --prompt "안녕하세요" --tokens 40
 ```
 
 This script runs the entire transformer forward pass (Attention, RoPE, SwiGLU, RMSNorm) using bare-metal NumPy operations. It supports loading both `.pth` (PyTorch) checkpoints and `.npz` (NumPy compressed) weight packages.
@@ -205,7 +196,7 @@ An interactive Streamlit dashboard is available to inspect the model's inner wor
 
 To start the dashboard, run:
 ```bash
-uv run streamlit run scripts/interpretability.py
+uv run streamlit run scripts/eval/interpretability.py
 ```
 
 ---

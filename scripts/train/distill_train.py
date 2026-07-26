@@ -25,7 +25,7 @@ def train_distilled_student(
     if not os.path.exists(corpus_path):
         print(f"❌ Distilled corpus file '{corpus_path}' not found.")
         print(
-            "💡 Run `python scripts/distill_generate.py` first to generate synthetic text."
+            "💡 Run `python scripts/data/distill_generate.py` first to generate synthetic text."
         )
         return
 
