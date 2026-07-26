@@ -37,6 +37,9 @@ run_bitnet_cu: run_bitnet.cu
 train: train.c
 	$(CC) $(CFLAGS) -o train train.c $(LDFLAGS)
 
+train_metal: train_metal.m
+	clang -O3 -framework Metal -framework Foundation -o train_metal train_metal.m
+
 train_cu: train.cu
 	nvcc -O3 --use_fast_math -o train_cu train.cu -lcublas
 
