@@ -1,7 +1,9 @@
+import os
 import time
+import argparse
 import torch
 import torch.nn as nn
-from tiny_llm import TinyLLM
+from tiny_llm import TinyLLM, NanoLLM
 
 
 class HybridSVDInt8Linear(nn.Module):
@@ -87,10 +89,12 @@ def compress_model_hybrid_svd(model: nn.Module, rank: int = 32) -> nn.Module:
     return model
 
 
-def run_svd_hybrid_benchmark():
-    print("=" * 95)
-    print("📊 BENCHMARK: Post-Training Hybrid SVD Decomposition + Int8 Quantization")
-    print("=" * 95)
+def run_svd_hybrid_benchmark(
+    model_type: str = "tiny", rank: int = 32, output_file: str = None
+):
+    model_name = (
+        "NanoLLM (Weight-Tied)" if model_type == "nano" else "TinyLLM (Standard)"
+    )
 
     vocab_size = 4000
     dim = 128
@@ -100,10 +104,11 @@ def run_svd_hybrid_benchmark():
     max_seq_len = 64
     batch_size = 2
     seqlen = 32
-    rank = 32
 
-    # 1. Baseline FP32 TinyLLM
-    fp32_model = TinyLLM(
+    model_cls = NanoLLM if model_type == "nano" else TinyLLM
+
+    # 1. Baseline FP32 Model
+    fp32_model = model_cls(
         vocab_size=vocab_size,
         dim=dim,
         n_layers=n_layers,
@@ -117,7 +122,7 @@ def run_svd_hybrid_benchmark():
     fp32_mem_mb = (fp32_params * 4.0) / (1024.0 * 1024.0)
 
     # 2. Hybrid SVD + Int8 Compressed Model
-    hybrid_model = TinyLLM(
+    hybrid_model = model_cls(
         vocab_size=vocab_size,
         dim=dim,
         n_layers=n_layers,
@@ -133,6 +138,8 @@ def run_svd_hybrid_benchmark():
     # Calculate Hybrid parameters and file size
     hybrid_params = 0
     hybrid_bytes = 0
+    visited_params = set()
+
     for _name, module in hybrid_model.named_modules():
         if isinstance(module, HybridSVDInt8Linear):
             p_count = (module.out_features * module.rank) + (
@@ -143,9 +150,12 @@ def run_svd_hybrid_benchmark():
                 p_count * 1 + 8
             )  # 1 byte per int8 weight + 8 bytes for scales
         elif isinstance(module, (nn.Embedding, nn.Linear)):
-            p_count = sum(p.numel() for p in module.parameters())
-            hybrid_params += p_count
-            hybrid_bytes += p_count * 4
+            for param in module.parameters():
+                if id(param) not in visited_params:
+                    visited_params.add(id(param))
+                    p_count = param.numel()
+                    hybrid_params += p_count
+                    hybrid_bytes += p_count * 4
 
     hybrid_mem_mb = hybrid_bytes / (1024.0 * 1024.0)
     size_reduction = (1.0 - (hybrid_mem_mb / fp32_mem_mb)) * 100.0
@@ -177,25 +187,63 @@ def run_svd_hybrid_benchmark():
             hybrid_logits.view(-1, vocab_size), target_labels.view(-1)
         ).item()
 
-    print(
+    lines = []
+    lines.append("=" * 95)
+    lines.append(
+        f"📊 BENCHMARK: Post-Training Hybrid SVD Decomposition + Int8 ({model_name})"
+    )
+    lines.append("=" * 95)
+    lines.append(
         f"  Compression Strategy           | {'Parameters':<12} | {'Memory (MB)':<12} | {'Forward (ms)':<12} | {'Loss':<6}"
     )
-    print("-" * 95)
-    print(
+    lines.append("-" * 95)
+    lines.append(
         f"  Baseline Float32 (FP32)         | {fp32_params:<12,} | {fp32_mem_mb:<12.2f} | {fp32_time_ms:<12.2f} | {fp32_loss:<6.3f}"
     )
-    print(
+    lines.append(
         f"🚀 Hybrid SVD (r={rank}) + Int8 Quant  | {hybrid_params:<12,} | {hybrid_mem_mb:<12.2f} | {hybrid_time_ms:<12.2f} | {hybrid_loss:<6.3f}"
     )
-    print("-" * 95)
-    print(
+    lines.append("-" * 95)
+    lines.append(
         f"💡 Key Takeaway: Hybrid SVD + Int8 Quantization reduces total model file size by {size_reduction:.1f}%!"
     )
-    print(
+    lines.append(
         f"   Model footprint shrank from {fp32_mem_mb:.2f} MB down to {hybrid_mem_mb:.2f} MB while preserving original language modeling quality!"
     )
-    print("=" * 95 + "\n")
+    lines.append("=" * 95 + "\n")
+
+    report_str = "\n".join(lines)
+    print(report_str)
+
+    if output_file:
+        os.makedirs(os.path.dirname(os.path.abspath(output_file)), exist_ok=True)
+        with open(output_file, "w", encoding="utf-8") as f:
+            f.write(report_str)
+        print(f"✅ Saved benchmark results to '{output_file}'.")
 
 
 if __name__ == "__main__":
-    run_svd_hybrid_benchmark()
+    parser = argparse.ArgumentParser(
+        description="Benchmark Hybrid SVD Decomposition + Int8 Quantization."
+    )
+    parser.add_argument(
+        "--model",
+        type=str,
+        choices=["tiny", "nano"],
+        default="tiny",
+        help="Model architecture choice: 'tiny' (TinyLLM) or 'nano' (NanoLLM weight-tied)",
+    )
+    parser.add_argument(
+        "--rank", type=int, default=32, help="Truncated SVD rank (default: 32)"
+    )
+    parser.add_argument(
+        "--output-file",
+        type=str,
+        default=None,
+        help="Optional filepath to save benchmark output report",
+    )
+
+    args = parser.parse_args()
+    run_svd_hybrid_benchmark(
+        model_type=args.model, rank=args.rank, output_file=args.output_file
+    )
