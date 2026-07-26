@@ -90,7 +90,7 @@ def compress_model_hybrid_svd(model: nn.Module, rank: int = 32) -> nn.Module:
 
 
 def run_svd_hybrid_benchmark(
-    model_type: str = "tiny", rank: int = 32, output_file: str = None
+    model_type: str = "tiny", rank: int = 32, save_model: str = None
 ):
     model_name = (
         "NanoLLM (Weight-Tied)" if model_type == "nano" else "TinyLLM (Standard)"
@@ -212,14 +212,12 @@ def run_svd_hybrid_benchmark(
     )
     lines.append("=" * 95 + "\n")
 
-    report_str = "\n".join(lines)
-    print(report_str)
+    print("\n".join(lines))
 
-    if output_file:
-        os.makedirs(os.path.dirname(os.path.abspath(output_file)), exist_ok=True)
-        with open(output_file, "w", encoding="utf-8") as f:
-            f.write(report_str)
-        print(f"✅ Saved benchmark results to '{output_file}'.")
+    if save_model:
+        os.makedirs(os.path.dirname(os.path.abspath(save_model)), exist_ok=True)
+        torch.save(hybrid_model.state_dict(), save_model)
+        print(f"✅ Saved compressed PyTorch model checkpoint to '{save_model}'.")
 
 
 if __name__ == "__main__":
@@ -237,13 +235,13 @@ if __name__ == "__main__":
         "--rank", type=int, default=32, help="Truncated SVD rank (default: 32)"
     )
     parser.add_argument(
-        "--output-file",
+        "--save-model",
         type=str,
         default=None,
-        help="Optional filepath to save benchmark output report",
+        help="Optional path to save the compressed PyTorch model checkpoint (.pth)",
     )
 
     args = parser.parse_args()
     run_svd_hybrid_benchmark(
-        model_type=args.model, rank=args.rank, output_file=args.output_file
+        model_type=args.model, rank=args.rank, save_model=args.save_model
     )
