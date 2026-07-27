@@ -1,4 +1,5 @@
 import argparse
+import json
 import os
 import struct
 
@@ -43,10 +44,10 @@ def export_svd_model(
     output_path: str,
     tokenizer_path: str = "checkpoints/tokenizer.json",
     rank: int = 32,
-    model_type: str = "tiny",
+    model_type: str = None,
+    max_seq_len: int = 512,
 ):
     print("⚡ Starting SVD Low-Rank + Int8 Quantization Exporter...")
-    print(f"  Model Type:        {model_type}")
     print(f"  Truncated Rank:    {rank}")
     print(f"  Checkpoint Path:   {checkpoint_path}")
     print(f"  Output Binary:     {output_path}")
@@ -56,9 +57,53 @@ def export_svd_model(
     n_layers = 4
     n_heads = 4
     ffn_dim = 512
-    max_seq_len = 64
 
-    model_cls = NanoLLM if model_type == "nano" else TinyLLM
+    state_dict = None
+    is_nano = False
+
+    if os.path.exists(checkpoint_path):
+        state_dict = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+        print(f"  Loaded trained PyTorch weights from '{checkpoint_path}'.")
+
+        # Auto-detect hyper-parameters from state_dict Tensors
+        if "tok_embeddings.weight" in state_dict:
+            vocab_size, dim = state_dict["tok_embeddings.weight"].shape
+
+        layer_indices = [
+            int(k.split(".")[1])
+            for k in state_dict.keys()
+            if k.startswith("layers.") and k.split(".")[1].isdigit()
+        ]
+        if layer_indices:
+            n_layers = max(layer_indices) + 1
+
+        if "layers.0.feed_forward.w1.weight" in state_dict:
+            ffn_dim = state_dict["layers.0.feed_forward.w1.weight"].shape[0]
+
+        if "freqs_cis" in state_dict:
+            max_seq_len = state_dict["freqs_cis"].shape[0] // 2
+
+        # Auto-detect weight tying
+        if model_type == "nano" or "nano" in checkpoint_path.lower():
+            is_nano = True
+        elif "output.weight" in state_dict and "tok_embeddings.weight" in state_dict:
+            if torch.equal(state_dict["output.weight"], state_dict["tok_embeddings.weight"]):
+                is_nano = True
+    else:
+        print(
+            f"  ⚠️ Warning: Checkpoint '{checkpoint_path}' not found. Using randomly initialized weights for export demonstration."
+        )
+
+    if model_type == "nano":
+        is_nano = True
+
+    resolved_model_type = "nano" if is_nano else "tiny"
+    print(f"  Auto-detected Model Architecture: {resolved_model_type.upper()}")
+    print(
+        f"  Detected Config: vocab={vocab_size}, dim={dim}, layers={n_layers}, ffn_dim={ffn_dim}, max_seq_len={max_seq_len}"
+    )
+
+    model_cls = NanoLLM if is_nano else TinyLLM
     model = model_cls(
         vocab_size=vocab_size,
         dim=dim,
@@ -68,14 +113,8 @@ def export_svd_model(
         max_seq_len=max_seq_len,
     )
 
-    if os.path.exists(checkpoint_path):
-        state_dict = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+    if state_dict is not None:
         model.load_state_dict(state_dict)
-        print(f"  Loaded trained PyTorch weights from '{checkpoint_path}'.")
-    else:
-        print(
-            f"  ⚠️ Warning: Checkpoint '{checkpoint_path}' not found. Using randomly initialized weights for export demonstration."
-        )
 
     model.eval()
 
@@ -148,8 +187,6 @@ def export_svd_model(
 
 
 def export_vocab_bin(vocab_out_path: str, tokenizer_path: str, vocab_size: int):
-    import json
-
     os.makedirs(os.path.dirname(os.path.abspath(vocab_out_path)), exist_ok=True)
     tokens = [""] * vocab_size
 
@@ -181,14 +218,30 @@ if __name__ == "__main__":
         help="Input PyTorch checkpoint path",
     )
     parser.add_argument(
-        "--output", type=str, default="c/model_svd.bin", help="Output SVD model binary path"
+        "--output",
+        type=str,
+        default="c/model_svd.bin",
+        help="Output SVD model binary path",
     )
     parser.add_argument(
-        "--tokenizer", type=str, default="checkpoints/tokenizer.json", help="Path to tokenizer.json"
+        "--tokenizer",
+        type=str,
+        default="checkpoints/tokenizer.json",
+        help="Path to tokenizer.json",
     )
     parser.add_argument("--rank", type=int, default=32, help="Truncated SVD rank")
     parser.add_argument(
-        "--model", type=str, choices=["tiny", "nano"], default="tiny", help="Model architecture"
+        "--model",
+        type=str,
+        choices=["tiny", "nano"],
+        default=None,
+        help="Model architecture (auto-detected if omitted)",
+    )
+    parser.add_argument(
+        "--max-seq-len",
+        type=int,
+        default=512,
+        help="Max sequence length for RoPE KV-cache buffers",
     )
 
     args = parser.parse_args()
@@ -198,4 +251,5 @@ if __name__ == "__main__":
         tokenizer_path=args.tokenizer,
         rank=args.rank,
         model_type=args.model,
+        max_seq_len=args.max_seq_len,
     )

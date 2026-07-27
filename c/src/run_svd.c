@@ -73,24 +73,26 @@ typedef struct {
 
 // Low-Rank SVD Int8 Matrix-Vector Multiply: out = x @ W_B.T @ W_A.T
 void mat_vec_svd_int8(float* out, float* x, SVDLayer* layer, int in_dim, int out_dim, int rank, float* h_buf) {
+    float scale_ab = layer->scale_a * layer->scale_b;
+
     // 1. Low-Rank Projection: h_buf [r] = x [in_dim] @ W_B [r, in_dim].T
     for (int r_idx = 0; r_idx < rank; r_idx++) {
         float sum = 0.0f;
         int8_t* b_row = layer->w_b + r_idx * in_dim;
         for (int k = 0; k < in_dim; k++) {
-            sum += x[k] * ((float)b_row[k] * layer->scale_b);
+            sum += x[k] * (float)b_row[k];
         }
         h_buf[r_idx] = sum;
     }
 
-    // 2. Output Projection: out [out_dim] = h_buf [r] @ W_A [out_dim, r].T
+    // 2. Output Projection: out [out_dim] = (h_buf [r] @ W_A [out_dim, r].T) * scale_ab
     for (int i = 0; i < out_dim; i++) {
         float sum = 0.0f;
         int8_t* a_row = layer->w_a + i * rank;
         for (int r_idx = 0; r_idx < rank; r_idx++) {
-            sum += h_buf[r_idx] * ((float)a_row[r_idx] * layer->scale_a);
+            sum += h_buf[r_idx] * (float)a_row[r_idx];
         }
-        out[i] = sum;
+        out[i] = sum * scale_ab;
     }
 }
 
@@ -342,11 +344,17 @@ int main(int argc, char* argv[]) {
     if (vfile) {
         for (int i = 0; i < config.vocab_size; i++) {
             unsigned char len = 0;
-            fread(&len, 1, 1, vfile);
-            if (len > 31) len = 31;
             vocab[i] = (char*)malloc(32);
-            fread(vocab[i], 1, 31, vfile);
-            vocab[i][len] = '\0';
+            if (fread(&len, 1, 1, vfile) == 1 && len <= 31) {
+                if (fread(vocab[i], 1, 31, vfile) == 31) {
+                    vocab[i][len] = '\0';
+                } else {
+                    sprintf(vocab[i], "[%d]", i);
+                }
+            } else {
+                sprintf(vocab[i], "[%d]", i);
+                fseek(vfile, 31, SEEK_CUR);
+            }
         }
         fclose(vfile);
     } else {
@@ -358,12 +366,13 @@ int main(int argc, char* argv[]) {
 
     // Allocate RunState Buffers
     RunState state;
-    state.x = (float*)calloc(config.dim, sizeof(float));
-    state.xb = (float*)calloc(config.dim, sizeof(float));
+    int max_dim = config.dim > config.ffn_dim ? config.dim : config.ffn_dim;
+    state.x = (float*)calloc(max_dim, sizeof(float));
+    state.xb = (float*)calloc(max_dim, sizeof(float));
     state.h_rank = (float*)calloc(config.rank, sizeof(float));
-    state.q = (float*)calloc(config.dim, sizeof(float));
-    state.k = (float*)calloc(config.dim, sizeof(float));
-    state.v = (float*)calloc(config.dim, sizeof(float));
+    state.q = (float*)calloc(max_dim, sizeof(float));
+    state.k = (float*)calloc(max_dim, sizeof(float));
+    state.v = (float*)calloc(max_dim, sizeof(float));
     state.att = (float*)calloc(config.n_heads * config.max_seq_len, sizeof(float));
     state.logits = (float*)calloc(config.vocab_size, sizeof(float));
 
@@ -388,6 +397,24 @@ int main(int argc, char* argv[]) {
     double total_time = (double)(end - start) / CLOCKS_PER_SEC;
     double tok_per_sec = num_steps / total_time;
     printf("\n\n📊 SVD+Int8 Engine Throughput: %.2f tokens/sec\n", tok_per_sec);
+
+    // Free RunState
+    free(state.x);
+    free(state.xb);
+    free(state.h_rank);
+    free(state.q);
+    free(state.k);
+    free(state.v);
+    free(state.att);
+    free(state.logits);
+    free(state.key_cache);
+    free(state.value_cache);
+
+    // Free Vocab
+    for (int i = 0; i < config.vocab_size; i++) {
+        free(vocab[i]);
+    }
+    free(vocab);
 
     return 0;
 }
