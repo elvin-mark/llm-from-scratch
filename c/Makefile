@@ -22,6 +22,9 @@ runq: src/runq.c
 run_bitnet: src/run_bitnet.c
 	$(CC) $(CFLAGS) -o run_bitnet src/run_bitnet.c $(LDFLAGS)
 
+run_svd: src/run_svd.c
+	$(CC) $(CFLAGS) -o run_svd src/run_svd.c $(LDFLAGS)
+
 run_metal: metal/run_metal.m
 	clang -O3 -framework Metal -framework Foundation -o run_metal metal/run_metal.m
 

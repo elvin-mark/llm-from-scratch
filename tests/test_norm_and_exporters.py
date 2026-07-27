@@ -82,3 +82,32 @@ def test_export_c_binary_header_format():
         assert header_ints[4] == n_heads  # n_kv_heads == n_heads for dense model
         assert header_ints[5] == len(tokenizer_data["model"]["vocab"])
         assert header_ints[6] == max_seq_len
+
+
+def test_export_svd_binary():
+    """Verify exporting model to SVD low-rank + Int8 binary format and running C engine."""
+    import os
+    import subprocess
+    import tempfile
+
+    from tools.export.export_svd import export_svd_model
+
+    with (
+        tempfile.NamedTemporaryFile("wb", suffix=".bin", delete=False) as out_bin_f,
+    ):
+        export_svd_model(
+            checkpoint_path="checkpoints/tiny_llm.pth",
+            output_path=out_bin_f.name,
+            rank=32,
+        )
+        assert os.path.exists(out_bin_f.name)
+        assert os.path.getsize(out_bin_f.name) > 0
+
+        if os.path.exists("./c/run_svd"):
+            res = subprocess.run(
+                ["./c/run_svd", out_bin_f.name, "checkpoints/vocab.bin", "10"],
+                capture_output=True,
+                text=True,
+            )
+            assert res.returncode == 0
+            assert "SVD Low-Rank + Int8 Quantization" in res.stdout

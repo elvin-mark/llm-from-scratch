@@ -154,6 +154,13 @@ You can run both **inference** and **training from scratch** entirely standalone
    cd c && make runq && ./runq
    ```
 
+4. **Hybrid SVD Decomposition + Int8 Quantization**:
+   For maximum post-training compression combining low-rank factorization and Int8 quantization:
+   ```bash
+   uv run python tools/export/export_svd.py --rank 32 --output c/model_svd.bin
+   cd c && make run_svd && ./run_svd c/model_svd.bin c/vocab.bin 30
+   ```
+
 ### 2. C & CUDA Training (Autograd from Scratch)
 
 You can also train the model directly in C or CUDA:
