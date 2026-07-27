@@ -92,22 +92,26 @@ def test_export_svd_binary():
 
     from tools.export.export_svd import export_svd_model
 
-    with (
-        tempfile.NamedTemporaryFile("wb", suffix=".bin", delete=False) as out_bin_f,
-    ):
+    tmp_f = tempfile.NamedTemporaryFile("wb", suffix=".bin", delete=False)
+    tmp_f.close()
+
+    try:
         export_svd_model(
             checkpoint_path="checkpoints/tiny_llm.pth",
-            output_path=out_bin_f.name,
+            output_path=tmp_f.name,
             rank=32,
         )
-        assert os.path.exists(out_bin_f.name)
-        assert os.path.getsize(out_bin_f.name) > 0
+        assert os.path.exists(tmp_f.name)
+        assert os.path.getsize(tmp_f.name) > 0
 
         if os.path.exists("./c/run_svd"):
             res = subprocess.run(
-                ["./c/run_svd", out_bin_f.name, "checkpoints/vocab.bin", "10"],
+                ["./c/run_svd", tmp_f.name, "c/vocab.bin", "10"],
                 capture_output=True,
                 text=True,
             )
             assert res.returncode == 0
             assert "SVD Low-Rank + Int8 Quantization" in res.stdout
+    finally:
+        if os.path.exists(tmp_f.name):
+            os.remove(tmp_f.name)

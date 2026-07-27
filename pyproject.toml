@@ -15,7 +15,8 @@ dependencies = [
     "seaborn>=0.13.2",
     "onnx>=1.15.0",
     "onnxruntime>=1.17.0",
-    "onnxscript>=0.1.0"
+    "onnxscript>=0.1.0",
+    "datasets>=2.16.0"
 ]
 
 [dependency-groups]

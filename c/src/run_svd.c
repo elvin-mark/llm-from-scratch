@@ -343,6 +343,7 @@ int main(int argc, char* argv[]) {
         for (int i = 0; i < config.vocab_size; i++) {
             unsigned char len = 0;
             fread(&len, 1, 1, vfile);
+            if (len > 31) len = 31;
             vocab[i] = (char*)malloc(32);
             fread(vocab[i], 1, 31, vfile);
             vocab[i][len] = '\0';

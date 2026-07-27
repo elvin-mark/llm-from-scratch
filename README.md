@@ -94,9 +94,9 @@ wget https://downloads.tatoeba.org/exports/per_language/kor/kor_sentences.tsv.bz
 bunzip2 ./kor_sentences.tsv.bz2
 ```
 
-Then train the BPE tokenizer and generate the text corpus using `uv run`:
+Or stream and prepare the **TinyStories** dataset (`roneneldan/TinyStories`) directly from Hugging Face:
 ```bash
-uv run python scripts/data/prepare_data.py ./kor_sentences.tsv
+uv run python scripts/data/prepare_tinystories.py --samples 50000 --vocab-size 4000
 ```
 This produces `data/corpus.txt` and `checkpoints/tokenizer.json`.
 
