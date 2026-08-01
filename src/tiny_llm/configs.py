@@ -23,18 +23,7 @@ class TinyLLMConfig:
 
     @classmethod
     def from_dict(cls, d: dict):
-        valid_keys = {
-            "arch",
-            "vocab_size",
-            "dim",
-            "n_layers",
-            "n_heads",
-            "ffn_dim",
-            "max_seq_len",
-            "n_kv_heads",
-            "num_experts",
-            "num_experts_per_tok",
-        }
+        valid_keys = set(cls.__dataclass_fields__.keys())
         filtered = {k: v for k, v in d.items() if k in valid_keys}
         return cls(**filtered)
 
