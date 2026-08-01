@@ -19,6 +19,9 @@ dependencies = [
     "datasets>=2.16.0"
 ]
 
+[project.scripts]
+tiny-llm = "tiny_llm.cli:main"
+
 [dependency-groups]
 dev = [
     "pytest>=8.0.0",
