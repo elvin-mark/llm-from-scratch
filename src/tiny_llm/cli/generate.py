@@ -1,5 +1,6 @@
 import os
 import sys
+
 import click
 import torch
 import torch.nn.functional as F
@@ -196,21 +197,15 @@ def _run_generate(
     is_flag=True,
     help="Use educational ScratchTokenizer",
 )
-@click.option(
-    "--prompt", default="Once upon a time", help="Text prompt to initialize generation"
-)
+@click.option("--prompt", default="Once upon a time", help="Text prompt to initialize generation")
 @click.option(
     "-i",
     "--interactive",
     is_flag=True,
     help="Launch interactive REPL mode in terminal",
 )
-@click.option(
-    "--max-tokens", type=int, default=64, help="Maximum number of tokens to generate"
-)
-@click.option(
-    "--temperature", type=float, default=0.8, help="Sampling temperature"
-)
+@click.option("--max-tokens", type=int, default=64, help="Maximum number of tokens to generate")
+@click.option("--temperature", type=float, default=0.8, help="Sampling temperature")
 @click.option("--top-k", type=int, default=50, help="Top-K sampling limit")
 def generate_cmd(
     checkpoint,
@@ -251,21 +246,15 @@ def generate_cmd(
     is_flag=True,
     help="Use educational ScratchTokenizer",
 )
-@click.option(
-    "--prompt", default="Once upon a time", help="Text prompt to initialize generation"
-)
+@click.option("--prompt", default="Once upon a time", help="Text prompt to initialize generation")
 @click.option(
     "-i",
     "--interactive",
     is_flag=True,
     help="Launch interactive REPL mode in terminal",
 )
-@click.option(
-    "--max-tokens", type=int, default=64, help="Maximum number of tokens to generate"
-)
-@click.option(
-    "--temperature", type=float, default=0.8, help="Sampling temperature"
-)
+@click.option("--max-tokens", type=int, default=64, help="Maximum number of tokens to generate")
+@click.option("--temperature", type=float, default=0.8, help="Sampling temperature")
 @click.option("--top-k", type=int, default=50, help="Top-K sampling limit")
 def infer_cmd(
     checkpoint,

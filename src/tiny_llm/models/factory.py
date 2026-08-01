@@ -1,5 +1,6 @@
 import json
 import os
+
 import torch
 
 from tiny_llm.configs import (
@@ -34,9 +35,7 @@ def create_model(arch: str = None, **kwargs):
 
     arch = arch.lower()
     if arch not in MODEL_REGISTRY:
-        raise ValueError(
-            f"Unknown architecture '{arch}'. Supported: {list(MODEL_REGISTRY.keys())}"
-        )
+        raise ValueError(f"Unknown architecture '{arch}'. Supported: {list(MODEL_REGISTRY.keys())}")
 
     config_cls, model_cls = MODEL_REGISTRY[arch]
 

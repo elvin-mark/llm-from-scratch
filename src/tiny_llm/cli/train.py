@@ -1,11 +1,12 @@
 import os
 import sys
+
 import click
 import torch
 import torch.nn.functional as F
 from rich.console import Console
 from rich.panel import Panel
-from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, TaskProgressColumn
+from rich.progress import BarColumn, Progress, SpinnerColumn, TaskProgressColumn, TextColumn
 from rich.table import Table
 
 from tiny_llm.data import SentencesDataset
@@ -47,7 +48,9 @@ console = Console()
 @click.option("--max-seq-len", type=int, default=64, help="Maximum sequence length")
 @click.option("--n-kv-heads", type=int, default=2, help="KV heads count for GQA (MoE model)")
 @click.option("--num-experts", type=int, default=8, help="Total experts count (MoE model)")
-@click.option("--num-experts-per-tok", type=int, default=2, help="Top-K experts per token (MoE model)")
+@click.option(
+    "--num-experts-per-tok", type=int, default=2, help="Top-K experts per token (MoE model)"
+)
 @click.option("--checkpoint-dir", default="checkpoints", help="Directory to save model checkpoints")
 @click.option("--lora", is_flag=True, help="Inject LoRA adapters for parameter-efficient tuning")
 @click.option("--lora-rank", type=int, default=8, help="LoRA rank dimension")
@@ -128,7 +131,9 @@ def train_cmd(
     )
 
     if lora:
-        console.print(f"[bold yellow]Injecting LoRA adapters (rank={lora_rank}, alpha={lora_alpha})...[/bold yellow]")
+        console.print(
+            f"[bold yellow]Injecting LoRA adapters (rank={lora_rank}, alpha={lora_alpha})...[/bold yellow]"
+        )
         inject_lora(model, r=lora_rank, alpha=lora_alpha)
 
     model.to(device)
@@ -195,6 +200,6 @@ def train_cmd(
     torch.save(model.state_dict(), model_path)
     config.save_json(config_path)
 
-    console.print(f"[bold green]✨ Training completed successfully![/bold green]")
+    console.print("[bold green]✨ Training completed successfully![/bold green]")
     console.print(f"📦 Model saved to: [bold white]{model_path}[/bold white]")
     console.print(f"⚙️ Config saved to: [bold white]{config_path}[/bold white]")

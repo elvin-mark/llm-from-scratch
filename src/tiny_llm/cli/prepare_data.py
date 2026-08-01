@@ -1,5 +1,6 @@
 import os
 import sys
+
 import click
 from rich.console import Console
 from rich.panel import Panel
@@ -16,30 +17,22 @@ console = Console()
     required=True,
     help="Path to input text or TSV file",
 )
-@click.option(
-    "--corpus-file", default="data/corpus.txt", help="Path to output corpus file"
-)
+@click.option("--corpus-file", default="data/corpus.txt", help="Path to output corpus file")
 @click.option(
     "--tokenizer-out",
     default="checkpoints/tokenizer.json",
     help="Path to output tokenizer JSON",
 )
-@click.option(
-    "--vocab-size", type=int, default=4000, help="Target BPE vocabulary size"
-)
+@click.option("--vocab-size", type=int, default=4000, help="Target BPE vocabulary size")
 @click.option(
     "--scratch-tokenizer",
     is_flag=True,
     help="Train using from-scratch Python tokenizer",
 )
-def prepare_data_cmd(
-    input_path, corpus_file, tokenizer_out, vocab_size, scratch_tokenizer
-):
+def prepare_data_cmd(input_path, corpus_file, tokenizer_out, vocab_size, scratch_tokenizer):
     """🔤 Process raw dataset and train BPE tokenizer."""
     if not os.path.exists(input_path):
-        console.print(
-            f"[bold red]Error:[/bold red] Input file '{input_path}' does not exist."
-        )
+        console.print(f"[bold red]Error:[/bold red] Input file '{input_path}' does not exist.")
         sys.exit(1)
 
     console.print(

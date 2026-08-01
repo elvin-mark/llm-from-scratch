@@ -1,6 +1,12 @@
 import click
 from rich.console import Console
 
+from tiny_llm.cli.bench import bench_cmd
+from tiny_llm.cli.export import export_cmd
+from tiny_llm.cli.generate import generate_cmd, infer_cmd
+from tiny_llm.cli.prepare_data import prepare_data_cmd
+from tiny_llm.cli.train import train_cmd
+
 console = Console()
 
 
@@ -14,13 +20,6 @@ def main():
     """
     pass
 
-
-# Import and register subcommands
-from tiny_llm.cli.bench import bench_cmd
-from tiny_llm.cli.export import export_cmd
-from tiny_llm.cli.generate import generate_cmd, infer_cmd
-from tiny_llm.cli.prepare_data import prepare_data_cmd
-from tiny_llm.cli.train import train_cmd
 
 main.add_command(train_cmd)
 main.add_command(generate_cmd)

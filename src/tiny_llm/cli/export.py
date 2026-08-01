@@ -1,5 +1,6 @@
 import os
 import sys
+
 import click
 from rich.console import Console
 from rich.panel import Panel
@@ -38,9 +39,7 @@ def export_cmd(checkpoint, fmt, output_dir):
     )
 
     if not os.path.exists(checkpoint):
-        console.print(
-            f"[bold red]Error:[/bold red] Checkpoint not found at '{checkpoint}'."
-        )
+        console.print(f"[bold red]Error:[/bold red] Checkpoint not found at '{checkpoint}'.")
         sys.exit(1)
 
     os.makedirs(output_dir, exist_ok=True)
@@ -72,6 +71,4 @@ def export_cmd(checkpoint, fmt, output_dir):
                 output_path=os.path.join(output_dir, "model_bitnet.bin"),
             )
 
-    console.print(
-        f"✨ [bold green]Model exported successfully to '{output_dir}'![/bold green]"
-    )
+    console.print(f"✨ [bold green]Model exported successfully to '{output_dir}'![/bold green]")
