@@ -147,6 +147,12 @@ Quantitatively evaluate model quality on test corpora, computing Cross-Entropy L
 uv run tiny-llm eval --dataset data/corpus.txt
 ```
 
+### 6. Subword Tokenizer Tree Visualizer (`tiny-llm tokenize-tree`)
+Render interactive ASCII subword BPE trees and token ID decomposition tables showing subword splits, characters per token, and tokenization efficiency:
+```bash
+uv run tiny-llm tokenize-tree --text "Unbelievable processing of subwords!"
+```
+
 ### 5. Data & Tokenizer Pipeline (`tiny-llm prepare-data`)
 Process raw text/TSV files and train BPE tokenizers:
 ```bash
