@@ -6,10 +6,6 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
 
-# Add project root to sys.path
-sys.path.insert(0, os.getcwd())
-
-
 console = Console()
 
 
