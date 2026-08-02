@@ -153,6 +153,12 @@ Render interactive ASCII subword BPE trees and token ID decomposition tables sho
 uv run tiny-llm tokenize-tree --text "Unbelievable processing of subwords!"
 ```
 
+### 7. Token Confidence & Surprisal Heatmap (`tiny-llm token-entropy`)
+Evaluate Shannon Entropy ($H(p) = -\sum p_i \log_2 p_i$) and Surprisal ($I(x_t) = -\log_2 P(x_t)$) per subword token, displaying terminal color-coded confidence heatmaps (Green = High Confidence, Yellow = Moderate, Red = Uncertainty/Guessing):
+```bash
+uv run tiny-llm token-entropy --prompt "Once upon a time in a tiny land"
+```
+
 ### 5. Data & Tokenizer Pipeline (`tiny-llm prepare-data`)
 Process raw text/TSV files and train BPE tokenizers:
 ```bash
