@@ -124,3 +124,7 @@ class SentencesDataset(Dataset):
         x = self.data[idx][:-1]
         y = self.data[idx][1:]
         return x, y
+
+
+# Alias for clean export
+TextDataset = SentencesDataset

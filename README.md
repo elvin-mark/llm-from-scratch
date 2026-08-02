@@ -141,6 +141,12 @@ Inspect model architecture specs, parameter count breakdowns per layer group, an
 uv run tiny-llm info --checkpoint checkpoints/tiny_llm.pth
 ```
 
+### 5. Dataset Perplexity & Quality Evaluator (`tiny-llm eval`)
+Quantitatively evaluate model quality on test corpora, computing Cross-Entropy Loss, Perplexity (PPL), Bits Per Character (BPC), and Top-1 Token Accuracy:
+```bash
+uv run tiny-llm eval --dataset data/corpus.txt
+```
+
 ### 5. Data & Tokenizer Pipeline (`tiny-llm prepare-data`)
 Process raw text/TSV files and train BPE tokenizers:
 ```bash
