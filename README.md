@@ -135,7 +135,13 @@ uv run tiny-llm viz-attn --prompt "The cat sat on the mat" --layer 0 --head 0
 uv run tiny-llm viz-attn --prompt "The cat sat on the mat" --layer 1 --head 2
 ```
 
-### 4. Data & Tokenizer Pipeline (`tiny-llm prepare-data`)
+### 4. Model & Memory Inspector (`tiny-llm info`)
+Inspect model architecture specs, parameter count breakdowns per layer group, and memory footprints across precision formats (FP32, FP16, Int8, BitNet 1.58-bit):
+```bash
+uv run tiny-llm info --checkpoint checkpoints/tiny_llm.pth
+```
+
+### 5. Data & Tokenizer Pipeline (`tiny-llm prepare-data`)
 Process raw text/TSV files and train BPE tokenizers:
 ```bash
 uv run tiny-llm prepare-data --input kor_sentences.tsv --vocab-size 4000
