@@ -2,7 +2,6 @@ import os
 import sys
 
 import click
-import torch
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -10,7 +9,6 @@ from rich.table import Table
 # Add project root to sys.path
 sys.path.insert(0, os.getcwd())
 
-from tiny_llm.models.factory import load_model_from_checkpoint
 
 console = Console()
 
@@ -108,11 +106,11 @@ def export_cmd(checkpoint, fmt, output_dir, tokenizer_path, quantize):
 
     with console.status(f"[bold green]Exporting weights to {fmt.upper()} format..."):
         if fmt == "onnx":
-            from tools.export.export_onnx import export_to_onnx
+            from tiny_llm.export import export_onnx
 
             out_name = "tiny_llm_quant.onnx" if quantize else "tiny_llm.onnx"
             out_path = os.path.join(output_dir, out_name)
-            export_to_onnx(
+            export_onnx(
                 model_path=checkpoint_path,
                 tokenizer_path=tokenizer_path,
                 output_path=out_path,
@@ -121,11 +119,11 @@ def export_cmd(checkpoint, fmt, output_dir, tokenizer_path, quantize):
             exported_files.append((out_path, "ONNX Computational Graph (Browser / Serverless)"))
 
         elif fmt == "c":
-            from tools.export.export_c import export_model
+            from tiny_llm.export import export_c
 
             out_path = os.path.join(output_dir, "model.bin")
             vocab_out = os.path.join(output_dir, "vocab.bin")
-            export_model(
+            export_c(
                 model_path=checkpoint_path,
                 tokenizer_path=tokenizer_path,
                 output_path=out_path,
@@ -136,10 +134,10 @@ def export_cmd(checkpoint, fmt, output_dir, tokenizer_path, quantize):
                 exported_files.append((vocab_out, "C Engine Tokenizer Vocabulary Binary"))
 
         elif fmt == "q8":
-            from tools.export.export_q8 import export_model_q8
+            from tiny_llm.export import export_q8
 
             out_path = os.path.join(output_dir, "model_q8.bin")
-            export_model_q8(
+            export_q8(
                 model_path=checkpoint_path,
                 tokenizer_path=tokenizer_path,
                 output_path=out_path,
@@ -147,7 +145,7 @@ def export_cmd(checkpoint, fmt, output_dir, tokenizer_path, quantize):
             exported_files.append((out_path, "Row-wise Int8 Dynamic Quantized C Binary"))
 
         elif fmt == "bitnet":
-            from tools.export.export_bitnet import export_bitnet
+            from tiny_llm.export import export_bitnet
 
             out_path = os.path.join(output_dir, "model_bitnet.bin")
             export_bitnet(
