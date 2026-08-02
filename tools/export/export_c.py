@@ -42,12 +42,37 @@ def export_model(model_path=None, tokenizer_path=None, output_path=None, vocab_p
     tokenizer = Tokenizer.from_file(tokenizer_path)
     vocab_size = tokenizer.get_vocab_size()
 
-    # Model configuration (from train.py)
-    dim = 128
-    n_layers = 4
-    n_heads = 4
-    ffn_dim = 512
-    max_seq_len = 64
+    ckpt_dir = os.path.dirname(model_path)
+    base_name = os.path.splitext(model_path)[0]
+    config_path = base_name + ".json"
+    if not os.path.exists(config_path):
+        config_path = os.path.join(ckpt_dir, "config.json")
+
+    state_dict = torch.load(model_path, map_location="cpu")
+
+    if os.path.exists(config_path):
+        import json
+
+        with open(config_path, "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+        dim = cfg.get("dim", state_dict["tok_embeddings.weight"].shape[1])
+        n_layers = cfg.get(
+            "n_layers",
+            len([k for k in state_dict.keys() if k.endswith(".attention_norm.weight")]),
+        )
+        n_heads = cfg.get("n_heads", 4)
+        ffn_dim = cfg.get(
+            "ffn_dim", state_dict["layers.0.feed_forward.w1.weight"].shape[0]
+        )
+        max_seq_len = cfg.get("max_seq_len", 64)
+    else:
+        dim = state_dict["tok_embeddings.weight"].shape[1]
+        n_layers = len(
+            [k for k in state_dict.keys() if k.endswith(".attention_norm.weight")]
+        )
+        n_heads = 4
+        ffn_dim = state_dict["layers.0.feed_forward.w1.weight"].shape[0]
+        max_seq_len = 64
 
     model = TinyLLM(
         vocab_size=vocab_size,
@@ -57,7 +82,7 @@ def export_model(model_path=None, tokenizer_path=None, output_path=None, vocab_p
         ffn_dim=ffn_dim,
         max_seq_len=max_seq_len,
     )
-    model.load_state_dict(torch.load(model_path, map_location="cpu", weights_only=True))
+    model.load_state_dict(state_dict)
     model.eval()
 
     if os.path.dirname(output_path):

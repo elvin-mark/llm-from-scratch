@@ -33,18 +33,49 @@ def export_to_onnx(
     tokenizer = Tokenizer.from_file(tokenizer_path)
     vocab_size = tokenizer.get_vocab_size()
 
-    print(f"Loading model with vocab_size={vocab_size}...")
-    # These match the default hyperparams used during training
+    ckpt_dir = os.path.dirname(model_path)
+    base_name = os.path.splitext(model_path)[0]
+    config_path = base_name + ".json"
+    if not os.path.exists(config_path):
+        config_path = os.path.join(ckpt_dir, "config.json")
+
+    state_dict = torch.load(model_path, map_location="cpu")
+
+    if os.path.exists(config_path):
+        import json
+
+        with open(config_path, "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+        dim = cfg.get("dim", state_dict["tok_embeddings.weight"].shape[1])
+        n_layers = cfg.get(
+            "n_layers",
+            len([k for k in state_dict.keys() if k.endswith(".attention_norm.weight")]),
+        )
+        n_heads = cfg.get("n_heads", 4)
+        ffn_dim = cfg.get(
+            "ffn_dim", state_dict["layers.0.feed_forward.w1.weight"].shape[0]
+        )
+        max_seq_len = cfg.get("max_seq_len", 64)
+    else:
+        dim = state_dict["tok_embeddings.weight"].shape[1]
+        n_layers = len(
+            [k for k in state_dict.keys() if k.endswith(".attention_norm.weight")]
+        )
+        n_heads = 4
+        ffn_dim = state_dict["layers.0.feed_forward.w1.weight"].shape[0]
+        max_seq_len = 64
+
+    print(f"Loading model with vocab_size={vocab_size}, dim={dim}, n_layers={n_layers}...")
     model = TinyLLM(
         vocab_size=vocab_size,
-        dim=128,
-        n_layers=4,
-        n_heads=4,
-        ffn_dim=512,
-        max_seq_len=64,
+        dim=dim,
+        n_layers=n_layers,
+        n_heads=n_heads,
+        ffn_dim=ffn_dim,
+        max_seq_len=max_seq_len,
     )
 
-    model.load_state_dict(torch.load(model_path, map_location="cpu", weights_only=True))
+    model.load_state_dict(state_dict)
     model.eval()
 
     # Create dummy input: Batch size 1, Sequence Length 4
