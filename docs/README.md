@@ -1,6 +1,6 @@
 # 📚 `llm-from-scratch` Technical Documentation Sitemap
 
-Welcome to the documentation sitemap for **`llm-from-scratch`**. This repository provides complete mathematical, architectural, and low-level C/CUDA/Metal engine guides for building Large Language Models from first principles.
+Welcome to the documentation sitemap for **`llm-from-scratch`**. This repository provides complete mathematical, architectural, and low-level C/CUDA engine guides for building Large Language Models from first principles.
 
 ---
 
@@ -13,6 +13,7 @@ flowchart TD
     Root --> Train["🎓 Training & Fine-Tuning"]
     Root --> Theory["📐 Theoretical Foundations"]
     Root --> CEngine["💻 Bare-Metal Runtimes"]
+    Root --> CLI["🚀 Unified CLI Tools"]
 
     Arch --> A1["architecture.md (Pre-RMSNorm, RoPE, SwiGLU)"]
     Arch --> A2["moe_gqa.md (MoE & Grouped Query Attention)"]
@@ -29,8 +30,28 @@ flowchart TD
     Theory --> M1["math.md (Mathematical Forward & Backward Formulas)"]
     Theory --> M2["tokenizer.md (Byte-Pair Encoding Algorithm)"]
 
-    CEngine --> C1["c/ARCH.md (C, CUDA, & Apple Silicon Metal Engines)"]
+    CEngine --> C1["c/ARCH.md (C & CUDA Hardware Engines)"]
+
+    CLI --> CLI1["tiny-llm train, generate, eval, token-entropy, viz-attn, info, tokenize-tree"]
 ```
+
+---
+
+## 🚀 Interactive CLI Tool Sitemap
+
+The project features a unified CLI (`tiny-llm`) with Rich visual commands:
+
+| Command | Category | Description & Primary Use Case |
+| :--- | :--- | :--- |
+| **`tiny-llm train`** | Model Training | Train `dense`, `moe`, `nano`, and `bitnet` models with optional LoRA adapters. |
+| **`tiny-llm generate`** | Inference | Autoregressive text generation with real-time subword token streaming, KV-cache toggle, and $\text{tok/s}$ meter. |
+| **`tiny-llm viz-attn`** | Interpretability | Render interactive color-coded attention heatmaps ($A_{ij}$) across layers and heads in terminal. |
+| **`tiny-llm token-entropy`** | Interpretability | Calculate Shannon Entropy $H(p)$ and Surprisal $I(x_t)$ per subword token with confidence heatmaps. |
+| **`tiny-llm tokenize-tree`** | Tokenization | Render interactive ASCII subword BPE trees, character length, and subword token decomposition. |
+| **`tiny-llm info`** | Model Inspector | Inspect checkpoint hyperparameters, parameter breakdown per layer group, and memory footprints. |
+| **`tiny-llm eval`** | Evaluation | Compute Cross-Entropy Loss, Perplexity (PPL), Bits Per Character (BPC), and Top-1 Token Accuracy. |
+| **`tiny-llm export`** | Deployment | Export PyTorch `.pth` checkpoints to ONNX, FP32 C binary, Int8 Q8 C binary, or BitNet binary. |
+| **`tiny-llm bench`** | Performance | Benchmark attention mechanisms, MoE routing, and FlashAttention execution speed. |
 
 ---
 
@@ -77,7 +98,7 @@ flowchart TD
 
 | Document | Topic | Key Concepts |
 | :--- | :--- | :--- |
-| **[C & Hardware Engines Architecture](../c/ARCH.md)** | Bare-Metal Systems | Memory-mapped C engines (`run.c`, `runq.c`), NVIDIA CUDA grid kernels (`run.cu`), Apple Silicon Metal Shaders (`run_metal.m`). |
+| **[C & Hardware Engines Architecture](../c/ARCH.md)** | Bare-Metal Systems | Memory-mapped C engines (`run.c`, `runq.c`) and NVIDIA CUDA grid kernels (`run.cu`). |
 
 ---
 
