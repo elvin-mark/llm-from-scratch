@@ -121,8 +121,11 @@ def viz_attn_cmd(
         from tiny_llm.tokenizer import ScratchTokenizer
 
         tokenizer = ScratchTokenizer.from_file(tokenizer_path)
-        token_ids = [tokenizer.vocab.get("[CLS]", 1)] + tokenizer.encode(prompt)
-        tokens_text = ["[CLS]"] + [tokenizer.vocab_inv.get(tid, str(tid)) for tid in token_ids[1:]]
+        encoded = tokenizer.encode(prompt)
+        enc_ids = encoded.ids if hasattr(encoded, "ids") else encoded
+        token_ids = [tokenizer.vocab.get("[CLS]", 1)] + enc_ids
+        inv_map = getattr(tokenizer, "inv_vocab", getattr(tokenizer, "vocab_inv", {}))
+        tokens_text = ["[CLS]"] + [inv_map.get(tid, str(tid)) for tid in token_ids[1:]]
     else:
         from tokenizers import Tokenizer
 

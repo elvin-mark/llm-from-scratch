@@ -1,15 +1,18 @@
+import json
+
+import torch
 from click.testing import CliRunner
 
 from tiny_llm.cli.eval import eval_cmd
 from tiny_llm.eval import evaluate_perplexity
 from tiny_llm.models import create_model
+from tiny_llm.tokenizer import ScratchTokenizer
 
 
 def test_evaluate_perplexity_math():
     """Verify evaluate_perplexity function computes valid perplexity and accuracy."""
     model, config = create_model("dense", vocab_size=100, dim=64, n_layers=2, n_heads=2)
 
-    import torch
     from torch.utils.data import DataLoader, TensorDataset
 
     x = torch.randint(0, 100, (4, 16))
@@ -24,12 +27,35 @@ def test_evaluate_perplexity_math():
 
 
 def test_eval_cmd_cli(tmp_path):
-    """Verify tiny-llm eval CLI command invocation."""
+    """Verify tiny-llm eval CLI command invocation in isolated environment."""
+    corpus_text = "The cat sat on the mat.\nHello world!\n"
     corpus_path = tmp_path / "corpus.txt"
-    corpus_path.write_text("The cat sat on the mat.\nHello world!\n", encoding="utf-8")
+    corpus_path.write_text(corpus_text, encoding="utf-8")
+
+    tok_data = ScratchTokenizer.train(corpus_text, vocab_size=50)
+    tok_path = tmp_path / "tokenizer.json"
+    with open(tok_path, "w", encoding="utf-8") as f:
+        json.dump(tok_data, f, ensure_ascii=False, indent=2)
+
+    vocab_size = len(tok_data["model"]["vocab"])
+    model, config = create_model("dense", vocab_size=vocab_size, dim=32, n_layers=2, n_heads=2)
+    ckpt_path = tmp_path / "model.pth"
+    torch.save(model.state_dict(), ckpt_path)
+    config.save_json(tmp_path / "config.json")
 
     runner = CliRunner()
-    result = runner.invoke(eval_cmd, ["--dataset", str(corpus_path)])
+    result = runner.invoke(
+        eval_cmd,
+        [
+            "--checkpoint",
+            str(ckpt_path),
+            "--dataset",
+            str(corpus_path),
+            "--tokenizer-path",
+            str(tok_path),
+            "--use-scratch-tokenizer",
+        ],
+    )
 
     assert result.exit_code == 0
     assert "Cross-Entropy Loss" in result.output
