@@ -44,8 +44,12 @@ class NanoLLM(nn.Module):
         self.output.weight = self.tok_embeddings.weight
 
     def forward(
-        self, tokens: torch.Tensor, start_pos: int = 0, kv_caches: list = None
-    ) -> torch.Tensor:
+        self,
+        tokens: torch.Tensor,
+        start_pos: int = 0,
+        kv_caches: list = None,
+        return_attn_weights: bool = False,
+    ):
         _bsz, seqlen = tokens.shape
         h = self.tok_embeddings(tokens)
         freqs_cis = self.freqs_cis[start_pos : start_pos + seqlen].to(tokens.device)
@@ -56,10 +60,25 @@ class NanoLLM(nn.Module):
             mask = torch.full((seqlen, seqlen), float("-inf"), device=tokens.device)
             mask = torch.triu(mask, diagonal=1)
 
+        all_weights = []
         for i, layer in enumerate(self.layers):
             cache = kv_caches[i] if kv_caches is not None else None
-            h = layer(h, freqs_cis, mask, start_pos=start_pos, kv_cache=cache)
+            if return_attn_weights:
+                h, weights = layer(
+                    h,
+                    freqs_cis,
+                    mask,
+                    start_pos=start_pos,
+                    kv_cache=cache,
+                    return_attn_weights=True,
+                )
+                all_weights.append(weights)
+            else:
+                h = layer(h, freqs_cis, mask, start_pos=start_pos, kv_cache=cache)
 
         h = self.norm(h)
         logits = self.output(h)
+
+        if return_attn_weights:
+            return logits, all_weights
         return logits

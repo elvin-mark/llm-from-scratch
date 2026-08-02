@@ -77,7 +77,8 @@ class Attention(nn.Module):
         mask: torch.Tensor = None,
         start_pos: int = 0,
         kv_cache: KVCache = None,
-    ) -> torch.Tensor:
+        return_attn_weights: bool = False,
+    ):
         bsz, seqlen, _ = x.shape
         xq, xk, xv = self.wq(x), self.wk(x), self.wv(x)
 
@@ -104,7 +105,11 @@ class Attention(nn.Module):
         output = torch.matmul(scores, values)
 
         output = output.transpose(1, 2).contiguous().view(bsz, seqlen, -1)
-        return self.wo(output)
+        out = self.wo(output)
+
+        if return_attn_weights:
+            return out, scores
+        return out
 
 
 class GroupedQueryAttention(nn.Module):
@@ -143,7 +148,8 @@ class GroupedQueryAttention(nn.Module):
         mask: torch.Tensor = None,
         start_pos: int = 0,
         kv_cache: KVCache = None,
-    ) -> torch.Tensor:
+        return_attn_weights: bool = False,
+    ):
         bsz, seqlen, _ = x.shape
         xq = self.wq(x).view(bsz, seqlen, self.n_heads, self.head_dim)
         xk = self.wk(x).view(bsz, seqlen, self.n_kv_heads, self.head_dim)
@@ -171,7 +177,11 @@ class GroupedQueryAttention(nn.Module):
         output = torch.matmul(scores, values)
 
         output = output.transpose(1, 2).contiguous().view(bsz, seqlen, -1)
-        return self.wo(output)
+        out = self.wo(output)
+
+        if return_attn_weights:
+            return out, scores
+        return out
 
 
 class EducationalFlashAttention(nn.Module):

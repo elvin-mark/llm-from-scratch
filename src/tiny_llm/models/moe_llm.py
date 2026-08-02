@@ -30,16 +30,37 @@ class MoETransformerBlock(nn.Module):
         self.attention_norm = RMSNorm(dim)
         self.ffn_norm = RMSNorm(dim)
 
-    def forward(self, x, freqs_cis, mask=None, start_pos: int = 0, kv_cache=None):
-        h = x + self.attention(
-            self.attention_norm(x),
-            freqs_cis,
-            mask,
-            start_pos=start_pos,
-            kv_cache=kv_cache,
-        )
-        out = h + self.feed_forward(self.ffn_norm(h))
-        return out
+    def forward(
+        self,
+        x,
+        freqs_cis,
+        mask=None,
+        start_pos: int = 0,
+        kv_cache=None,
+        return_attn_weights: bool = False,
+    ):
+        if return_attn_weights:
+            attn_out, weights = self.attention(
+                self.attention_norm(x),
+                freqs_cis,
+                mask,
+                start_pos=start_pos,
+                kv_cache=kv_cache,
+                return_attn_weights=True,
+            )
+            h = x + attn_out
+            out = h + self.feed_forward(self.ffn_norm(h))
+            return out, weights
+        else:
+            h = x + self.attention(
+                self.attention_norm(x),
+                freqs_cis,
+                mask,
+                start_pos=start_pos,
+                kv_cache=kv_cache,
+            )
+            out = h + self.feed_forward(self.ffn_norm(h))
+            return out
 
 
 class MoELLM(nn.Module):
@@ -91,8 +112,12 @@ class MoELLM(nn.Module):
         self.freqs_cis = precompute_freqs_cis(dim // n_heads, max_seq_len * 2)
 
     def forward(
-        self, tokens: torch.Tensor, start_pos: int = 0, kv_caches: list = None
-    ) -> torch.Tensor:
+        self,
+        tokens: torch.Tensor,
+        start_pos: int = 0,
+        kv_caches: list = None,
+        return_attn_weights: bool = False,
+    ):
         bsz, seqlen = tokens.shape
         h = self.tok_embeddings(tokens)
         freqs_cis = self.freqs_cis[start_pos : start_pos + seqlen].to(tokens.device)
@@ -102,9 +127,25 @@ class MoELLM(nn.Module):
             mask = torch.full((1, 1, seqlen, seqlen), float("-inf"), device=tokens.device)
             mask = torch.triu(mask, diagonal=1)
 
+        all_weights = []
         for i, layer in enumerate(self.layers):
             cache = kv_caches[i] if kv_caches is not None else None
-            h = layer(h, freqs_cis, mask, start_pos=start_pos, kv_cache=cache)
+            if return_attn_weights:
+                h, weights = layer(
+                    h,
+                    freqs_cis,
+                    mask,
+                    start_pos=start_pos,
+                    kv_cache=cache,
+                    return_attn_weights=True,
+                )
+                all_weights.append(weights)
+            else:
+                h = layer(h, freqs_cis, mask, start_pos=start_pos, kv_cache=cache)
 
         h = self.norm(h)
-        return self.output(h)
+        logits = self.output(h)
+
+        if return_attn_weights:
+            return logits, all_weights
+        return logits
