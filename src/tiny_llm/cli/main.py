@@ -1,4 +1,4 @@
-import click
+import rich_click as click
 from rich.console import Console
 
 from tiny_llm.cli.bench import bench_cmd
@@ -11,6 +11,9 @@ from tiny_llm.cli.token_entropy import token_entropy_cmd
 from tiny_llm.cli.tokenize_tree import tokenize_tree_cmd
 from tiny_llm.cli.train import train_cmd
 from tiny_llm.cli.viz_attn import viz_attn_cmd
+
+click.rich_click.USE_RICH_MARKUP = True
+click.rich_click.SHOW_ARGUMENTS = True
 
 console = Console()
 

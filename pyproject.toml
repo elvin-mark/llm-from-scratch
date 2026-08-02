@@ -18,7 +18,8 @@ dependencies = [
     "onnxscript>=0.1.0",
     "datasets>=2.16.0",
     "click>=8.0.0",
-    "rich>=13.0.0"
+    "rich>=13.0.0",
+    "rich-click>=1.7.0"
 ]
 
 [project.scripts]
