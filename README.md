@@ -241,6 +241,9 @@ You can run both **inference** and **training from scratch** entirely standalone
    
    # GPU with Custom CUDA Kernels
    make run_cu && ./run_cu
+
+   # Apple Silicon GPU with Metal Performance Shaders
+   cd metal && make run_metal && ./run_metal
    ```
 
 3. **Int8 Dynamic Quantization**:

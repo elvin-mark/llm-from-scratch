@@ -98,7 +98,7 @@ The project features a unified CLI (`tiny-llm`) with Rich visual commands:
 
 | Document | Topic | Key Concepts |
 | :--- | :--- | :--- |
-| **[C & Hardware Engines Architecture](../c/ARCH.md)** | Bare-Metal Systems | Memory-mapped C engines (`run.c`, `runq.c`) and NVIDIA CUDA grid kernels (`run.cu`). |
+| **[C & Hardware Engines Architecture](../c/ARCH.md)** | Bare-Metal Systems | Memory-mapped C engines (`run.c`, `runq.c`), NVIDIA CUDA grid kernels (`run.cu`), and Apple Silicon Metal Shaders (`c/metal/run_metal.m`, `metal_kernel.metal`). |
 
 ---
 
