@@ -81,14 +81,88 @@ uv sync
 
 ### 2. Run the Unit Test Suite
 
-Verify that all model modules, RoPE dot-product invariants, causal masking, and dataset loaders pass:
+Verify that all model modules, RoPE dot-product invariants, causal masking, and dataset loaders pass (41 unit tests):
 ```bash
 uv run pytest
 ```
 
-### 3. Prepare the Tokenizer and Corpus
+---
 
-To train the tokenizer, download and extract a TSV sentences dataset (e.g. from Tatoeba):
+## Unified `tiny-llm` CLI Tool
+
+The project includes a modular CLI built with **Click** and **Rich** for interactive, colorized terminal workflows.
+
+Execute commands via `tiny-llm <command>` or `uv run tiny-llm <command>`:
+
+```bash
+# Display CLI help menu & available subcommands
+uv run tiny-llm --help
+```
+
+### 1. Model Training (`tiny-llm train`)
+Train any supported architecture (`dense`, `moe`, `nano`, `bitnet`) with parameter-efficient LoRA support:
+```bash
+# Train a Mixture-of-Experts (MoE) model
+uv run tiny-llm train --arch moe --epochs 10 --batch-size 32 --dim 128
+
+# Train an ultra-compact NanoLLM model
+uv run tiny-llm train --arch nano --epochs 10 --dim 128
+
+# Train a 1.58-bit BitNet model with LoRA adapters
+uv run tiny-llm train --arch bitnet --lora --lora-rank 8
+```
+
+### 2. Live Text Generation & Streaming (`tiny-llm generate` / `tiny-llm infer`)
+Generate text using auto-detected checkpoint architecture configs, featuring **real-time token streaming**, **stateful O(1) KV-Caching**, and **tok/s throughput meters**:
+```bash
+# Single prompt generation (streams tokens live to terminal)
+uv run tiny-llm generate --prompt "Once upon a time" --max-tokens 64
+
+# Launch interactive terminal REPL chat mode
+uv run tiny-llm generate -i
+
+# Educational side-by-side comparison: disable KV-Cache (O(N^2) re-compute vs O(1) cached)
+uv run tiny-llm generate --prompt "Once upon a time" --no-kv-cache
+```
+
+### 3. Terminal Attention Map Visualizer (`tiny-llm viz-attn`)
+Render interactive, color-coded Rich matrix heatmaps of attention weights ($A_{ij}$) across layers and heads directly in your terminal:
+```bash
+# Visualize Layer 0, Head 0 attention weights for a prompt
+uv run tiny-llm viz-attn --prompt "The cat sat on the mat" --layer 0 --head 0
+
+# Inspect Layer 1, Head 2
+uv run tiny-llm viz-attn --prompt "The cat sat on the mat" --layer 1 --head 2
+```
+
+### 4. Data & Tokenizer Pipeline (`tiny-llm prepare-data`)
+Process raw text/TSV files and train BPE tokenizers:
+```bash
+uv run tiny-llm prepare-data --input kor_sentences.tsv --vocab-size 4000
+```
+
+### 5. Checkpoint Export (`tiny-llm export`)
+Export PyTorch `.pth` checkpoints to ONNX, C binary, or Int8 Quantized formats:
+```bash
+uv run tiny-llm export --checkpoint checkpoints/tiny_llm.pth --format onnx
+uv run tiny-llm export --checkpoint checkpoints/tiny_llm.pth --format c
+uv run tiny-llm export --checkpoint checkpoints/tiny_llm.pth --format q8
+```
+
+### 6. Component Benchmarking (`tiny-llm bench`)
+Run empirical performance benchmark suites on internal model components:
+```bash
+uv run tiny-llm bench --suite attention
+uv run tiny-llm bench --suite moe
+uv run tiny-llm bench --suite flash_attn
+```
+
+---
+
+## Datasets & Legacy Scripts
+
+### 1. Prepare Tokenizer & Corpus
+To train the tokenizer on a custom TSV sentences dataset (e.g. from Tatoeba):
 ```bash
 wget https://downloads.tatoeba.org/exports/per_language/kor/kor_sentences.tsv.bz2
 bunzip2 ./kor_sentences.tsv.bz2
@@ -102,15 +176,7 @@ This produces `data/corpus.txt` and `checkpoints/tokenizer.json`.
 
 *(Optional: You can train the tokenizer using our educational pure-Python BPE algorithm from scratch by appending `--scratch-tokenizer`)*
 
-### 4. Train the Model
-
-To train the `TinyLLM` model on the generated corpus:
-```bash
-uv run python scripts/train/train.py
-```
-This will train the model and save the weights to `checkpoints/tiny_llm.pth`.
-
-### 5. Generate Text & Inference
+### 2. Legacy NumPy-Only Inference Option
 
 For a hyper-compact, lightweight inference option that bypasses PyTorch dependencies and runs entirely on `numpy`, you can use `scripts/eval/inference.py`:
 
