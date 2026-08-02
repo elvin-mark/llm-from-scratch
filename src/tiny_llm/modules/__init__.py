@@ -2,6 +2,7 @@ from .attention import (
     Attention,
     EducationalFlashAttention,
     GroupedQueryAttention,
+    KVCache,
     MultiHeadLatentAttention,
 )
 from .bitlinear import BitLinear, STETernaryQuantize
@@ -19,6 +20,7 @@ __all__ = [
     "GroupedQueryAttention",
     "EducationalFlashAttention",
     "MultiHeadLatentAttention",
+    "KVCache",
     "FeedForward",
     "MoERouter",
     "MoEFeedForward",

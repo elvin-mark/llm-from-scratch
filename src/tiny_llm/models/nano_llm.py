@@ -43,10 +43,12 @@ class NanoLLM(nn.Module):
         # Weight Tying: Share memory between tok_embeddings and output head
         self.output.weight = self.tok_embeddings.weight
 
-    def forward(self, tokens: torch.Tensor) -> torch.Tensor:
+    def forward(
+        self, tokens: torch.Tensor, start_pos: int = 0, kv_caches: list = None
+    ) -> torch.Tensor:
         _bsz, seqlen = tokens.shape
         h = self.tok_embeddings(tokens)
-        freqs_cis = self.freqs_cis[:seqlen].to(tokens.device)
+        freqs_cis = self.freqs_cis[start_pos : start_pos + seqlen].to(tokens.device)
 
         # Causal Attention Mask
         mask = None
@@ -54,8 +56,9 @@ class NanoLLM(nn.Module):
             mask = torch.full((seqlen, seqlen), float("-inf"), device=tokens.device)
             mask = torch.triu(mask, diagonal=1)
 
-        for layer in self.layers:
-            h = layer(h, freqs_cis, mask)
+        for i, layer in enumerate(self.layers):
+            cache = kv_caches[i] if kv_caches is not None else None
+            h = layer(h, freqs_cis, mask, start_pos=start_pos, kv_cache=cache)
 
         h = self.norm(h)
         logits = self.output(h)

@@ -7,9 +7,57 @@ import torch.nn.functional as F
 from .rope import apply_rotary_emb
 
 
+class KVCache(nn.Module):
+    """
+    Pre-allocated Key-Value Cache buffer for autoregressive token decoding.
+    Reduces single-token inference cost from O(N^2) to O(1).
+    """
+
+    def __init__(
+        self,
+        max_batch_size: int,
+        max_seq_len: int,
+        n_heads: int,
+        head_dim: int,
+        device=None,
+        dtype=torch.float32,
+    ):
+        super().__init__()
+        self.register_buffer(
+            "k",
+            torch.zeros(
+                (max_batch_size, n_heads, max_seq_len, head_dim),
+                device=device,
+                dtype=dtype,
+            ),
+            persistent=False,
+        )
+        self.register_buffer(
+            "v",
+            torch.zeros(
+                (max_batch_size, n_heads, max_seq_len, head_dim),
+                device=device,
+                dtype=dtype,
+            ),
+            persistent=False,
+        )
+
+    def update(self, start_pos: int, k_val: torch.Tensor, v_val: torch.Tensor):
+        """
+        Updates cache at start_pos and returns accumulated keys and values up to (start_pos + seqlen).
+        """
+        bsz, n_heads, seqlen, head_dim = k_val.shape
+        self.k[:bsz, :, start_pos : start_pos + seqlen, :] = k_val
+        self.v[:bsz, :, start_pos : start_pos + seqlen, :] = v_val
+
+        keys = self.k[:bsz, :, : start_pos + seqlen, :]
+        values = self.v[:bsz, :, : start_pos + seqlen, :]
+        return keys, values
+
+
 class Attention(nn.Module):
     """
-    Standard Multi-Head Attention (MHA) mechanism with Rotary Embeddings.
+    Standard Multi-Head Attention (MHA) mechanism with Rotary Embeddings & KV Cache support.
     """
 
     def __init__(self, dim: int, n_heads: int):
@@ -23,7 +71,12 @@ class Attention(nn.Module):
         self.wo = nn.Linear(n_heads * self.head_dim, dim, bias=False)
 
     def forward(
-        self, x: torch.Tensor, freqs_cis: torch.Tensor, mask: torch.Tensor = None
+        self,
+        x: torch.Tensor,
+        freqs_cis: torch.Tensor,
+        mask: torch.Tensor = None,
+        start_pos: int = 0,
+        kv_cache: KVCache = None,
     ) -> torch.Tensor:
         bsz, seqlen, _ = x.shape
         xq, xk, xv = self.wq(x), self.wk(x), self.wv(x)
@@ -38,12 +91,17 @@ class Attention(nn.Module):
         xk = xk.transpose(1, 2)
         xv = xv.transpose(1, 2)
 
-        scores = torch.matmul(xq, xk.transpose(2, 3)) / math.sqrt(self.head_dim)
+        if kv_cache is not None:
+            keys, values = kv_cache.update(start_pos, xk, xv)
+        else:
+            keys, values = xk, xv
+
+        scores = torch.matmul(xq, keys.transpose(2, 3)) / math.sqrt(self.head_dim)
         if mask is not None:
             scores = scores + mask
 
         scores = F.softmax(scores.float(), dim=-1).type_as(xq)
-        output = torch.matmul(scores, xv)
+        output = torch.matmul(scores, values)
 
         output = output.transpose(1, 2).contiguous().view(bsz, seqlen, -1)
         return self.wo(output)
@@ -79,7 +137,12 @@ class GroupedQueryAttention(nn.Module):
         )
 
     def forward(
-        self, x: torch.Tensor, freqs_cis: torch.Tensor, mask: torch.Tensor = None
+        self,
+        x: torch.Tensor,
+        freqs_cis: torch.Tensor,
+        mask: torch.Tensor = None,
+        start_pos: int = 0,
+        kv_cache: KVCache = None,
     ) -> torch.Tensor:
         bsz, seqlen, _ = x.shape
         xq = self.wq(x).view(bsz, seqlen, self.n_heads, self.head_dim)
@@ -92,6 +155,9 @@ class GroupedQueryAttention(nn.Module):
         xq = xq.transpose(1, 2)
         xk = xk.transpose(1, 2)
         xv = xv.transpose(1, 2)
+
+        if kv_cache is not None:
+            xk, xv = kv_cache.update(start_pos, xk, xv)
 
         # Repeat KV heads for GQA broadcast
         keys = self.repeat_kv(xk)

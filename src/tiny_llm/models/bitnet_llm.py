@@ -25,7 +25,12 @@ class BitNetAttention(nn.Module):
         self.wo = BitLinear(n_heads * self.head_dim, dim, bias=False)
 
     def forward(
-        self, x: torch.Tensor, freqs_cis: torch.Tensor, mask: torch.Tensor = None
+        self,
+        x: torch.Tensor,
+        freqs_cis: torch.Tensor,
+        mask: torch.Tensor = None,
+        start_pos: int = 0,
+        kv_cache=None,
     ) -> torch.Tensor:
         bsz, seqlen, _ = x.shape
         xq, xk, xv = self.wq(x), self.wk(x), self.wv(x)
@@ -40,12 +45,17 @@ class BitNetAttention(nn.Module):
         xk = xk.transpose(1, 2)
         xv = xv.transpose(1, 2)
 
-        scores = torch.matmul(xq, xk.transpose(2, 3)) / math.sqrt(self.head_dim)
+        if kv_cache is not None:
+            keys, values = kv_cache.update(start_pos, xk, xv)
+        else:
+            keys, values = xk, xv
+
+        scores = torch.matmul(xq, keys.transpose(2, 3)) / math.sqrt(self.head_dim)
         if mask is not None:
             scores = scores + mask
 
         scores = F.softmax(scores.float(), dim=-1).type_as(xq)
-        output = torch.matmul(scores, xv)
+        output = torch.matmul(scores, values)
 
         output = output.transpose(1, 2).contiguous().view(bsz, seqlen, -1)
         return self.wo(output)
@@ -78,8 +88,14 @@ class BitNetBlock(nn.Module):
         self.attention_norm = RMSNorm(dim)
         self.ffn_norm = RMSNorm(dim)
 
-    def forward(self, x, freqs_cis, mask):
-        h = x + self.attention(self.attention_norm(x), freqs_cis, mask)
+    def forward(self, x, freqs_cis, mask=None, start_pos: int = 0, kv_cache=None):
+        h = x + self.attention(
+            self.attention_norm(x),
+            freqs_cis,
+            mask,
+            start_pos=start_pos,
+            kv_cache=kv_cache,
+        )
         out = h + self.feed_forward(self.ffn_norm(h))
         return out
 
@@ -109,23 +125,33 @@ class BitNetLLM(nn.Module):
             ffn_dim = config.ffn_dim
             max_seq_len = config.max_seq_len
 
+        self.vocab_size = vocab_size
+        self.dim = dim
+        self.n_layers = n_layers
+        self.n_heads = n_heads
+        self.max_seq_len = max_seq_len
+
         self.tok_embeddings = nn.Embedding(vocab_size, dim)
         self.layers = nn.ModuleList([BitNetBlock(dim, n_heads, ffn_dim) for _ in range(n_layers)])
         self.norm = RMSNorm(dim)
         self.output = nn.Linear(dim, vocab_size, bias=False)
         self.freqs_cis = precompute_freqs_cis(dim // n_heads, max_seq_len * 2)
 
-    def forward(self, tokens):
+    def forward(
+        self, tokens: torch.Tensor, start_pos: int = 0, kv_caches: list = None
+    ) -> torch.Tensor:
         bsz, seqlen = tokens.shape
         h = self.tok_embeddings(tokens)
-        freqs_cis = self.freqs_cis[:seqlen].to(tokens.device)
+        freqs_cis = self.freqs_cis[start_pos : start_pos + seqlen].to(tokens.device)
 
         mask = None
         if seqlen > 1:
             mask = torch.full((1, 1, seqlen, seqlen), float("-inf"), device=tokens.device)
             mask = torch.triu(mask, diagonal=1)
 
-        for layer in self.layers:
-            h = layer(h, freqs_cis, mask)
+        for i, layer in enumerate(self.layers):
+            cache = kv_caches[i] if kv_caches is not None else None
+            h = layer(h, freqs_cis, mask, start_pos=start_pos, kv_cache=cache)
+
         h = self.norm(h)
         return self.output(h)
