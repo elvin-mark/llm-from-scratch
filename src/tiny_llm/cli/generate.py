@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 
 import click
 import torch
@@ -23,11 +24,14 @@ def sample_tokens(
     device="cpu",
     max_seq_len=128,
     use_kv_cache=True,
+    token_callback=None,
 ):
-    """Autoregressive text token generator helper supporting KV-caching."""
+    """Autoregressive text token generator helper supporting KV-caching and live token callbacks."""
     model.eval()
     bsz, prompt_len = input_ids.shape
     generated = input_ids.clone().to(device)
+
+    t_start = time.perf_counter()
 
     if use_kv_cache:
         n_layers = getattr(model, "n_layers", len(model.layers))
@@ -62,6 +66,9 @@ def sample_tokens(
             next_token = torch.multinomial(probs, num_samples=1)
             generated = torch.cat((generated, next_token), dim=1)
 
+            if token_callback is not None:
+                token_callback(next_token.item(), time.perf_counter() - t_start)
+
         # 2. Decode Phase (Single Token Step)
         start_pos = prompt_len
         curr_token = next_token
@@ -77,6 +84,10 @@ def sample_tokens(
                 probs = F.softmax(next_logits, dim=-1)
                 curr_token = torch.multinomial(probs, num_samples=1)
                 generated = torch.cat((generated, curr_token), dim=1)
+
+                if token_callback is not None:
+                    token_callback(curr_token.item(), time.perf_counter() - t_start)
+
                 start_pos += 1
 
     else:
@@ -94,6 +105,9 @@ def sample_tokens(
                 next_token = torch.multinomial(probs, num_samples=1)
                 generated = torch.cat((generated, next_token), dim=1)
 
+                if token_callback is not None:
+                    token_callback(next_token.item(), time.perf_counter() - t_start)
+
     return generated[0].tolist()
 
 
@@ -107,8 +121,9 @@ def _run_generate(
     temperature,
     top_k,
     use_kv_cache=True,
+    stream=True,
 ):
-    """Internal implementation handler for text generation."""
+    """Internal implementation handler for text generation with live token streaming."""
     checkpoint_path = checkpoint
     if checkpoint_path is None or not os.path.exists(checkpoint_path):
         candidates = [
@@ -116,6 +131,7 @@ def _run_generate(
             "checkpoints/bitnet_model.pth",
             "checkpoints/nano_model.pth",
             "checkpoints/tiny_llm.pth",
+            ".models/kor/tiny_llm.pth",
             "tiny_llm.pth",
         ]
         found = None
@@ -176,6 +192,57 @@ def _run_generate(
     def decode_ids(ids):
         return tokenizer.decode(ids)
 
+    def run_single_prompt(user_prompt):
+        console.print(f"\n[bold cyan]Prompt:[/bold cyan] '{user_prompt}'")
+        console.print("[bold green]✨ Output:[/bold green] ", end="")
+        console.file.flush()
+
+        prompt_ids = torch.tensor([encode_text(user_prompt)], dtype=torch.long)
+
+        stream_state = {
+            "tokens": [],
+            "prev_len": 0,
+            "t_start": None,
+        }
+
+        def stream_callback(token_id, elapsed):
+            if stream_state["t_start"] is None:
+                stream_state["t_start"] = time.perf_counter()
+
+            stream_state["tokens"].append(token_id)
+            if stream:
+                full_text = decode_ids(stream_state["tokens"])
+                new_text = full_text[stream_state["prev_len"] :]
+                stream_state["prev_len"] = len(full_text)
+                console.print(new_text, end="")
+                console.file.flush()
+
+        t0 = time.perf_counter()
+        output_ids = sample_tokens(
+            model,
+            prompt_ids,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            top_k=top_k,
+            device=device,
+            max_seq_len=config.max_seq_len,
+            use_kv_cache=use_kv_cache,
+            token_callback=stream_callback,
+        )
+
+        t_total = time.perf_counter() - t0
+        num_generated = len(output_ids) - prompt_ids.shape[1]
+        tok_per_sec = num_generated / max(t_total, 1e-5)
+
+        if not stream:
+            output_text = decode_ids(output_ids)
+            console.print(output_text, end="")
+            console.file.flush()
+
+        console.print(
+            f"\n[dim]⚡ Generated [bold white]{num_generated}[/bold white] tokens in [bold white]{t_total:.2f}s[/bold white] ([bold cyan]{tok_per_sec:.1f} tok/s[/bold cyan])[/dim]\n"
+        )
+
     # Interactive REPL mode
     if interactive:
         console.print(
@@ -189,54 +256,12 @@ def _run_generate(
                 if user_prompt.lower() in ("exit", "quit"):
                     break
 
-                prompt_ids = torch.tensor([encode_text(user_prompt)], dtype=torch.long)
-                output_ids = sample_tokens(
-                    model,
-                    prompt_ids,
-                    max_tokens=max_tokens,
-                    temperature=temperature,
-                    top_k=top_k,
-                    device=device,
-                    max_seq_len=config.max_seq_len,
-                    use_kv_cache=use_kv_cache,
-                )
-                text = decode_ids(output_ids)
-                console.print(
-                    Panel(
-                        text,
-                        title="Generated Output",
-                        border_style="green",
-                        expand=False,
-                    )
-                )
-                console.print()
+                run_single_prompt(user_prompt)
             except (KeyboardInterrupt, EOFError):
                 console.print("\nExiting REPL.")
                 break
     else:
-        console.print(f"[bold cyan]Prompt:[/bold cyan] '{prompt}'")
-        prompt_ids = torch.tensor([encode_text(prompt)], dtype=torch.long)
-
-        output_ids = sample_tokens(
-            model,
-            prompt_ids,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            top_k=top_k,
-            device=device,
-            max_seq_len=config.max_seq_len,
-            use_kv_cache=use_kv_cache,
-        )
-        output_text = decode_ids(output_ids)
-
-        console.print(
-            Panel(
-                output_text,
-                title="✨ Generated Output",
-                border_style="green",
-                expand=False,
-            )
-        )
+        run_single_prompt(prompt)
 
 
 @click.command("generate")
@@ -270,6 +295,11 @@ def _run_generate(
     default=True,
     help="Enable or disable stateful KV-Cache for single-token O(1) decoding",
 )
+@click.option(
+    "--stream/--no-stream",
+    default=True,
+    help="Enable or disable real-time live token streaming to terminal",
+)
 def generate_cmd(
     checkpoint,
     tokenizer_path,
@@ -280,6 +310,7 @@ def generate_cmd(
     temperature,
     top_k,
     use_kv_cache,
+    stream,
 ):
     """🔮 Run autoregressive text generation / inference on any model."""
     _run_generate(
@@ -292,6 +323,7 @@ def generate_cmd(
         temperature,
         top_k,
         use_kv_cache=use_kv_cache,
+        stream=stream,
     )
 
 
@@ -326,6 +358,11 @@ def generate_cmd(
     default=True,
     help="Enable or disable stateful KV-Cache for single-token O(1) decoding",
 )
+@click.option(
+    "--stream/--no-stream",
+    default=True,
+    help="Enable or disable real-time live token streaming to terminal",
+)
 def infer_cmd(
     checkpoint,
     tokenizer_path,
@@ -336,6 +373,7 @@ def infer_cmd(
     temperature,
     top_k,
     use_kv_cache,
+    stream,
 ):
     """Alias for 'generate' command."""
     _run_generate(
@@ -348,4 +386,5 @@ def infer_cmd(
         temperature,
         top_k,
         use_kv_cache=use_kv_cache,
+        stream=stream,
     )
