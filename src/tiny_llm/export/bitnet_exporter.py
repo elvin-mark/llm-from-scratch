@@ -1,27 +1,41 @@
+import json
 import os
 import struct
 
 import torch
 
-from tiny_llm.models import BitNetLLM
+from tiny_llm.models.factory import create_model
 from tiny_llm.modules import STETernaryQuantize
 from tiny_llm.tokenizer import ScratchTokenizer
 
 
-def export_bitnet(model_path: str = None, tokenizer_path: str = None, output_path: str = None):
+def export_bitnet(
+    model_path: str = None,
+    tokenizer_path: str = None,
+    output_path: str = None,
+    arch: str = "bitnet",
+):
     """Export BitNet 1.58-bit model checkpoint into packed ternary bitstream binary format."""
     if model_path is None:
-        model_path = (
-            "checkpoints/bitnet_model.pth"
-            if os.path.exists("checkpoints/bitnet_model.pth")
-            else "bitnet_model.pth"
-        )
+        for p in [
+            "checkpoints/bitnet_model.pth",
+            "../checkpoints/bitnet_model.pth",
+            "bitnet_model.pth",
+            "../bitnet_model.pth",
+        ]:
+            if os.path.exists(p):
+                model_path = p
+                break
     if tokenizer_path is None:
-        tokenizer_path = (
-            "checkpoints/tokenizer.json"
-            if os.path.exists("checkpoints/tokenizer.json")
-            else "tokenizer.json"
-        )
+        for p in [
+            "checkpoints/tokenizer.json",
+            "../checkpoints/tokenizer.json",
+            "tokenizer.json",
+            "../tokenizer.json",
+        ]:
+            if os.path.exists(p):
+                tokenizer_path = p
+                break
     if output_path is None:
         output_path = (
             "model_bitnet.bin" if os.path.basename(os.getcwd()) == "c" else "c/model_bitnet.bin"
@@ -30,31 +44,55 @@ def export_bitnet(model_path: str = None, tokenizer_path: str = None, output_pat
     tokenizer = ScratchTokenizer.from_file(tokenizer_path)
     vocab_size = tokenizer.get_vocab_size()
 
-    checkpoint = torch.load(model_path, map_location="cpu", weights_only=True)
-    dim = checkpoint["tok_embeddings.weight"].shape[1]
-    n_layers = len([k for k in checkpoint.keys() if k.endswith(".attention_norm.weight")])
-    n_heads = 4
-    ffn_dim = checkpoint["layers.0.feed_forward.w1.weight"].shape[0]
-    max_seq_len = 128
+    ckpt_dir = os.path.dirname(model_path) if model_path else "."
+    base_name = os.path.splitext(model_path)[0] if model_path else "model"
+    config_path = base_name + ".json"
+    if not os.path.exists(config_path):
+        config_path = os.path.join(ckpt_dir, "config.json")
 
-    model = BitNetLLM(
+    state_dict = torch.load(model_path, map_location="cpu", weights_only=True)
+
+    cfg = {}
+    if os.path.exists(config_path):
+        with open(config_path, "r", encoding="utf-8") as f:
+            cfg = json.load(f)
+
+    arch = cfg.get("arch", arch)
+    dim = cfg.get("dim", state_dict["tok_embeddings.weight"].shape[1])
+    n_layers = cfg.get(
+        "n_layers",
+        len([k for k in state_dict.keys() if k.endswith(".attention_norm.weight")]),
+    )
+    n_heads = cfg.get("n_heads", 4)
+    n_kv_heads = cfg.get("n_kv_heads", n_heads)
+
+    if "layers.0.feed_forward.w1.weight" in state_dict:
+        ffn_dim = cfg.get("ffn_dim", state_dict["layers.0.feed_forward.w1.weight"].shape[0])
+    else:
+        ffn_dim = cfg.get("ffn_dim", 512)
+
+    max_seq_len = cfg.get("max_seq_len", 128)
+
+    model, _ = create_model(
+        arch=arch,
         vocab_size=vocab_size,
         dim=dim,
         n_layers=n_layers,
         n_heads=n_heads,
+        n_kv_heads=n_kv_heads,
         ffn_dim=ffn_dim,
         max_seq_len=max_seq_len,
     )
-    model.load_state_dict(checkpoint)
+    model.load_state_dict(state_dict)
     model.eval()
 
     if os.path.dirname(output_path):
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
 
-    print(f"Exporting 1.58-bit BitNet model to {output_path}...")
+    print(f"Exporting 1.58-bit BitNet model ({arch.upper()}) to {output_path}...")
     with open(output_path, "wb") as f:
         header = struct.pack(
-            "iiiiiii", dim, ffn_dim, n_layers, n_heads, n_heads, vocab_size, max_seq_len
+            "iiiiiii", dim, ffn_dim, n_layers, n_heads, n_kv_heads, vocab_size, max_seq_len
         )
         header += b"\x00" * (256 - len(header))
         f.write(header)

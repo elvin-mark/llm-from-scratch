@@ -7,6 +7,7 @@
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <time.h>
 
 #ifdef USE_BLAS
 #include <cblas.h>
@@ -70,7 +71,6 @@ void rmsnorm(float* o, float* x, float* weight, int size) {
 }
 
 void matmul(float* xout, float* x, float* w, int n, int d) {
-    // W is shape (d, n) -> transposed logic based on PyTorch Linear
 #ifdef USE_BLAS
     cblas_sgemv(CblasRowMajor, CblasNoTrans, d, n, 1.0f, w, n, x, 1, 0.0f, xout, 1);
 #else
@@ -113,6 +113,66 @@ int argmax(float* x, int size) {
     return max_i;
 }
 
+typedef struct {
+    float prob;
+    int index;
+} ProbIndex;
+
+int sample_top_k(float* logits, int vocab_size, int top_k, float temperature) {
+    if (temperature <= 0.0f || top_k == 1) {
+        return argmax(logits, vocab_size);
+    }
+
+    // Apply temperature scaling
+    for (int i = 0; i < vocab_size; i++) {
+        logits[i] /= temperature;
+    }
+
+    // Softmax probabilities
+    softmax(logits, vocab_size);
+
+    int k = (top_k > 0 && top_k < vocab_size) ? top_k : 40;
+
+    ProbIndex* pairs = (ProbIndex*)malloc(vocab_size * sizeof(ProbIndex));
+    for (int i = 0; i < vocab_size; i++) {
+        pairs[i].prob = logits[i];
+        pairs[i].index = i;
+    }
+
+    // Partial selection for top_k elements
+    for (int i = 0; i < k; i++) {
+        int max_i = i;
+        for (int j = i + 1; j < vocab_size; j++) {
+            if (pairs[j].prob > pairs[max_i].prob) {
+                max_i = j;
+            }
+        }
+        ProbIndex tmp = pairs[i];
+        pairs[i] = pairs[max_i];
+        pairs[max_i] = tmp;
+    }
+
+    // Re-normalize top-k probabilities
+    float sum = 0.0f;
+    for (int i = 0; i < k; i++) {
+        sum += pairs[i].prob;
+    }
+
+    float r = ((float)rand() / (float)RAND_MAX) * sum;
+    float cdf = 0.0f;
+    int selected_idx = pairs[0].index;
+    for (int i = 0; i < k; i++) {
+        cdf += pairs[i].prob;
+        if (r < cdf) {
+            selected_idx = pairs[i].index;
+            break;
+        }
+    }
+
+    free(pairs);
+    return selected_idx;
+}
+
 // Forward pass
 float* forward(Config* p, Weights* w, RunState* s, int token, int pos) {
     int dim = p->dim;
@@ -147,7 +207,7 @@ float* forward(Config* p, Weights* w, RunState* s, int token, int pos) {
             float q1 = s->q[i+1];
             s->q[i]   = q0 * fcr - q1 * fci;
             s->q[i+1] = q0 * fci + q1 * fcr;
-            
+
             // K
             if (i < kv_dim) {
                 float k0 = s->k[i];
@@ -168,7 +228,7 @@ float* forward(Config* p, Weights* w, RunState* s, int token, int pos) {
         for (int h = 0; h < p->n_heads; h++) {
             float* q_head = s->q + h * head_size;
             float* att_head = s->att + h * p->max_seq_len;
-            
+
             for (int t = 0; t <= pos; t++) {
                 float* k_head = s->key_cache + loff + t * kv_dim + (h / kv_mul) * head_size;
                 float score = 0.0f;
@@ -206,7 +266,7 @@ float* forward(Config* p, Weights* w, RunState* s, int token, int pos) {
         // FFN
         matmul(s->hb, s->xb, w->w1[l], dim, hidden_dim);
         matmul(s->hb2, s->xb, w->w3[l], dim, hidden_dim);
-        
+
         // SwiGLU
         for (int i = 0; i < hidden_dim; i++) {
             float val = s->hb[i];
@@ -253,15 +313,45 @@ void load_vocab(const char* filepath) {
     fclose(f);
 }
 
-int main() {
+void print_token_clean(const char* token_str) {
+    if (strcmp(token_str, "[PAD]") == 0 || strcmp(token_str, "[SEP]") == 0 ||
+        strcmp(token_str, "[EOS]") == 0 || strcmp(token_str, "[CLS]") == 0 ||
+        strcmp(token_str, "[UNK]") == 0) {
+        return;
+    }
+
+    // Check ByteLevel space prefix 'Ġ' (0xC4 0xA0 in UTF-8)
+    if ((unsigned char)token_str[0] == 0xC4 && (unsigned char)token_str[1] == 0xA0) {
+        printf(" %s", token_str + 2);
+    } else if (token_str[0] == ' ') {
+        printf(" %s", token_str + 1);
+    } else {
+        printf("%s", token_str);
+    }
+}
+
+int main(int argc, char* argv[]) {
+    srand((unsigned int)time(NULL));
+
+    char* model_path = (argc > 1) ? argv[1] : "model.bin";
+    char* vocab_path = (argc > 2) ? argv[2] : "vocab.bin";
+    float temperature = (argc > 3) ? atof(argv[3]) : 0.8f;
+    int steps = (argc > 4) ? atoi(argv[4]) : 64;
+
     // Load weights
-    int fd = open("model.bin", O_RDONLY);
-    if (fd == -1) { printf("Cannot open model.bin. Run export.py first!\n"); return 1; }
-    
+    int fd = open(model_path, O_RDONLY);
+    if (fd == -1) {
+        printf("Cannot open %s. Run export command first!\n", model_path);
+        return 1;
+    }
+
     struct stat sb;
     fstat(fd, &sb);
     float* data = (float*)mmap(NULL, sb.st_size, PROT_READ, MAP_PRIVATE, fd, 0);
-    if (data == MAP_FAILED) { printf("mmap failed\n"); return 1; }
+    if (data == MAP_FAILED) {
+        printf("mmap failed\n");
+        return 1;
+    }
 
     Config c;
     int* idata = (int*)data;
@@ -273,7 +363,7 @@ int main() {
     c.vocab_size = idata[5];
     c.max_seq_len = idata[6];
 
-    float* weights_ptr = data + (256 / sizeof(float)); // Header is 256 bytes
+    float* weights_ptr = data + (256 / sizeof(float));
 
     Weights w;
     w.token_embedding_table = weights_ptr; weights_ptr += c.vocab_size * c.dim;
@@ -299,12 +389,12 @@ int main() {
         w.w2[l] = weights_ptr; weights_ptr += c.dim * c.hidden_dim;
         w.w3[l] = weights_ptr; weights_ptr += c.hidden_dim * c.dim;
     }
-    
+
     w.rms_final_weight = weights_ptr; weights_ptr += c.dim;
     w.wcls = weights_ptr; weights_ptr += c.vocab_size * c.dim;
 
     // Load Vocab
-    load_vocab("vocab.bin");
+    load_vocab(vocab_path);
 
     // Alloc RunState
     RunState s;
@@ -321,26 +411,26 @@ int main() {
     s.key_cache = calloc(c.n_layers * c.max_seq_len * c.dim, sizeof(float));
     s.value_cache = calloc(c.n_layers * c.max_seq_len * c.dim, sizeof(float));
 
-    printf("Starting Generation:\n");
-    int token = 1; // [CLS] token id is 1
-    printf("%s", vocab[token]);
-    
+    printf("Starting Generation (temp=%.2f, top_k=40):\n", temperature);
+    int token = 430; // Token 430 is "Once"
+    print_token_clean(vocab[token]);
+
     int pos = 0;
-    while (pos < c.max_seq_len - 1) {
+    int max_steps = steps < c.max_seq_len ? steps : c.max_seq_len - 1;
+    while (pos < max_steps) {
         float* logits = forward(&c, &w, &s, token, pos);
-        
-        // Next token (greedy argmax)
-        int next_token = argmax(logits, c.vocab_size);
-        
+
+        // Next token (Top-K sampling)
+        int next_token = sample_top_k(logits, c.vocab_size, 40, temperature);
+
         char* token_str = vocab[next_token];
-        
-        // HuggingFace BPE cleanup logic for display
-        if (strncmp(token_str, "Ġ", 3) == 0) printf(" %s", token_str + 3); // Ġ represents space
-        else if (strncmp(token_str, " ", 1) == 0) printf(" %s", token_str + 1);
-        else if (strcmp(token_str, "[PAD]") == 0 || strcmp(token_str, "[SEP]") == 0 || strcmp(token_str, "[EOS]") == 0) break;
-        else printf("%s", token_str);
-        
+        if (strcmp(token_str, "[PAD]") == 0 || strcmp(token_str, "[SEP]") == 0 || strcmp(token_str, "[EOS]") == 0) {
+            break;
+        }
+
+        print_token_clean(token_str);
         fflush(stdout);
+
         token = next_token;
         pos++;
     }
