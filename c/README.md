@@ -58,7 +58,7 @@ To run the model with 8-bit dynamic quantization:
 
 1. Export the model weights into the quantized binary format:
    ```bash
-   uv run python tools/export/export_q8.py
+   uv run tiny-llm export --format q8
    ```
    This creates `c/model_q8.bin`.
 

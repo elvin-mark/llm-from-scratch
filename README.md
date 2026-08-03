@@ -45,7 +45,6 @@ llm-from-scratch/
 │       └── data.py           # PyTorch Dataset loaders
 ├── experiments/              # Empirical benchmark suite (bench_attention, bench_flash_attn, bench_moe, bench_lora)
 ├── scripts/                  # Standalone entrypoints (train, generate, inference, interpretability)
-├── tools/                    # Export wrappers (export_c, export_q8, export_onnx)
 ├── c/                        # Bare-metal C & CUDA engines (run.c, train.c, run.cu, train.cu)
 ├── ui/                       # Web interface & WebGL deployment configs
 ├── tests/                    # Unit testing suite (48 unit tests)

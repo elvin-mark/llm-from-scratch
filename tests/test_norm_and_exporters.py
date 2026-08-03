@@ -4,7 +4,7 @@ import tempfile
 import torch
 
 from tiny_llm import RMSNorm
-from tools.export.export_c import export_model
+from tiny_llm.export import export_c as export_model
 
 
 def test_rmsnorm_scale_invariance():
@@ -90,7 +90,7 @@ def test_export_svd_binary():
     import subprocess
     import tempfile
 
-    from tools.export.export_svd import export_svd_model
+    from tiny_llm.export import export_svd as export_svd_model
 
     tmp_f = tempfile.NamedTemporaryFile("wb", suffix=".bin", delete=False)
     tmp_f.close()

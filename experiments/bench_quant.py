@@ -4,8 +4,8 @@ import tempfile
 import torch
 
 from tiny_llm import ScratchTokenizer, TinyLLM
-from tools.export.export_c import export_model
-from tools.export.export_q8 import export_model_q8
+from tiny_llm.export import export_c as export_model
+from tiny_llm.export import export_q8 as export_model_q8
 
 
 def run_quantization_benchmark():

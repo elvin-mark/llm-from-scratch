@@ -53,7 +53,7 @@ def test_export_bitnet_binary():
     import tempfile
 
     from tiny_llm import ScratchTokenizer
-    from tools.export.export_bitnet import export_bitnet
+    from tiny_llm.export import export_bitnet
 
     vocab_size = 50
     tokenizer_data = ScratchTokenizer.train(
