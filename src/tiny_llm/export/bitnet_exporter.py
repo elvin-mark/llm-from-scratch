@@ -44,29 +44,41 @@ def export_bitnet(
     tokenizer = ScratchTokenizer.from_file(tokenizer_path)
     vocab_size = tokenizer.get_vocab_size()
 
+    state_dict = None
+    if model_path and os.path.exists(model_path):
+        state_dict = torch.load(model_path, map_location="cpu", weights_only=True)
+    else:
+        print(f"  ⚠️ Warning: Checkpoint '{model_path}' not found. Using initialized model weights.")
+
     ckpt_dir = os.path.dirname(model_path) if model_path else "."
     base_name = os.path.splitext(model_path)[0] if model_path else "model"
     config_path = base_name + ".json"
     if not os.path.exists(config_path):
         config_path = os.path.join(ckpt_dir, "config.json")
 
-    state_dict = torch.load(model_path, map_location="cpu", weights_only=True)
-
     cfg = {}
-    if os.path.exists(config_path):
+    if os.path.exists(config_path) and state_dict is not None:
         with open(config_path, "r", encoding="utf-8") as f:
             cfg = json.load(f)
 
     arch = cfg.get("arch", arch)
-    dim = cfg.get("dim", state_dict["tok_embeddings.weight"].shape[1])
-    n_layers = cfg.get(
-        "n_layers",
-        len([k for k in state_dict.keys() if k.endswith(".attention_norm.weight")]),
+    dim = (
+        cfg.get("dim", state_dict["tok_embeddings.weight"].shape[1])
+        if state_dict
+        else cfg.get("dim", 128)
+    )
+    n_layers = (
+        cfg.get(
+            "n_layers",
+            len([k for k in state_dict.keys() if k.endswith(".attention_norm.weight")]),
+        )
+        if state_dict
+        else cfg.get("n_layers", 4)
     )
     n_heads = cfg.get("n_heads", 4)
     n_kv_heads = cfg.get("n_kv_heads", n_heads)
 
-    if "layers.0.feed_forward.w1.weight" in state_dict:
+    if state_dict and "layers.0.feed_forward.w1.weight" in state_dict:
         ffn_dim = cfg.get("ffn_dim", state_dict["layers.0.feed_forward.w1.weight"].shape[0])
     else:
         ffn_dim = cfg.get("ffn_dim", 512)
@@ -83,7 +95,8 @@ def export_bitnet(
         ffn_dim=ffn_dim,
         max_seq_len=max_seq_len,
     )
-    model.load_state_dict(state_dict)
+    if state_dict:
+        model.load_state_dict(state_dict)
     model.eval()
 
     if os.path.dirname(output_path):

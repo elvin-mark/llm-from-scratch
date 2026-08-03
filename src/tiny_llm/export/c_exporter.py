@@ -55,10 +55,14 @@ def export_c(
     if not os.path.exists(config_path):
         config_path = os.path.join(ckpt_dir, "config.json")
 
-    state_dict = torch.load(model_path, map_location="cpu", weights_only=True)
+    state_dict = None
+    if model_path and os.path.exists(model_path):
+        state_dict = torch.load(model_path, map_location="cpu", weights_only=True)
+    else:
+        print(f"  ⚠️ Warning: Checkpoint '{model_path}' not found. Using initialized model weights.")
 
     cfg = {}
-    if os.path.exists(config_path):
+    if os.path.exists(config_path) and state_dict is not None:
         with open(config_path, "r", encoding="utf-8") as f:
             loaded_cfg = json.load(f)
         if (
@@ -71,12 +75,16 @@ def export_c(
     if arch is None:
         arch = cfg.get("arch", None)
     if arch is None:
-        if "nano" in model_path.lower():
+        if model_path and "nano" in model_path.lower():
             arch = "nano"
-        elif "moe" in model_path.lower() or any("experts" in k for k in state_dict.keys()):
+        elif model_path and (
+            "moe" in model_path.lower()
+            or (state_dict and any("experts" in k for k in state_dict.keys()))
+        ):
             arch = "moe"
-        elif "bitnet" in model_path.lower() or any(
-            "weight_scale" in k or "gamma" in k for k in state_dict.keys()
+        elif model_path and (
+            "bitnet" in model_path.lower()
+            or (state_dict and any("weight_scale" in k or "gamma" in k for k in state_dict.keys()))
         ):
             arch = "bitnet"
         else:
@@ -84,21 +92,29 @@ def export_c(
 
     print(f"  Architecture auto-detected: {arch.upper()}")
 
-    dim = cfg.get("dim", state_dict["tok_embeddings.weight"].shape[1])
-    vocab_size = cfg.get("vocab_size", state_dict["tok_embeddings.weight"].shape[0])
-    n_layers = cfg.get(
-        "n_layers",
-        len([k for k in state_dict.keys() if k.endswith(".attention_norm.weight")]),
+    dim = (
+        cfg.get("dim", state_dict["tok_embeddings.weight"].shape[1])
+        if state_dict
+        else cfg.get("dim", 128)
+    )
+    vocab_size = (
+        cfg.get("vocab_size", state_dict["tok_embeddings.weight"].shape[0])
+        if state_dict
+        else cfg.get("vocab_size", vocab_size)
+    )
+    n_layers = (
+        cfg.get(
+            "n_layers",
+            len([k for k in state_dict.keys() if k.endswith(".attention_norm.weight")]),
+        )
+        if state_dict
+        else cfg.get("n_layers", 4)
     )
     n_heads = cfg.get("n_heads", 4)
     n_kv_heads = cfg.get("n_kv_heads", n_heads)
 
-    if "layers.0.feed_forward.w1.weight" in state_dict:
+    if state_dict and "layers.0.feed_forward.w1.weight" in state_dict:
         ffn_dim = cfg.get("ffn_dim", state_dict["layers.0.feed_forward.w1.weight"].shape[0])
-    elif "layers.0.feed_forward.experts.0.w1.weight" in state_dict:
-        ffn_dim = cfg.get(
-            "ffn_dim", state_dict["layers.0.feed_forward.experts.0.w1.weight"].shape[0]
-        )
     else:
         ffn_dim = cfg.get("ffn_dim", 512)
 
@@ -114,7 +130,8 @@ def export_c(
         ffn_dim=ffn_dim,
         max_seq_len=max_seq_len,
     )
-    model.load_state_dict(state_dict)
+    if state_dict:
+        model.load_state_dict(state_dict)
     model.eval()
 
     if os.path.dirname(output_path):

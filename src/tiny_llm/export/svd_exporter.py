@@ -47,7 +47,7 @@ def export_svd(
     max_seq_len: int = 512,
 ):
     """Export model to Hybrid SVD Low-Rank + Int8 Quantized binary format for C engine."""
-    if checkpoint_path is None:
+    if checkpoint_path is None or not os.path.exists(checkpoint_path):
         for p in [
             "checkpoints/tiny_llm.pth",
             "../checkpoints/tiny_llm.pth",
@@ -67,7 +67,13 @@ def export_svd(
     print(f"  Checkpoint Path:   {checkpoint_path}")
     print(f"  Output Binary:     {output_path}")
 
-    state_dict = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+    state_dict = None
+    if checkpoint_path and os.path.exists(checkpoint_path):
+        state_dict = torch.load(checkpoint_path, map_location="cpu", weights_only=True)
+    else:
+        print(
+            f"  ⚠️ Warning: Checkpoint '{checkpoint_path}' not found. Using initialized model weights."
+        )
 
     ckpt_dir = os.path.dirname(checkpoint_path) if checkpoint_path else "."
     base_name = os.path.splitext(checkpoint_path)[0] if checkpoint_path else "model"
@@ -76,7 +82,7 @@ def export_svd(
         config_path = os.path.join(ckpt_dir, "config.json")
 
     cfg = {}
-    if os.path.exists(config_path):
+    if os.path.exists(config_path) and state_dict is not None:
         with open(config_path, "r", encoding="utf-8") as f:
             loaded_cfg = json.load(f)
         if (
@@ -88,12 +94,16 @@ def export_svd(
     if arch is None:
         arch = cfg.get("arch", None)
     if arch is None:
-        if "nano" in checkpoint_path.lower():
+        if checkpoint_path and "nano" in checkpoint_path.lower():
             arch = "nano"
-        elif "moe" in checkpoint_path.lower() or any("experts" in k for k in state_dict.keys()):
+        elif checkpoint_path and (
+            "moe" in checkpoint_path.lower()
+            or (state_dict and any("experts" in k for k in state_dict.keys()))
+        ):
             arch = "moe"
-        elif "bitnet" in checkpoint_path.lower() or any(
-            "weight_scale" in k or "gamma" in k for k in state_dict.keys()
+        elif checkpoint_path and (
+            "bitnet" in checkpoint_path.lower()
+            or (state_dict and any("weight_scale" in k or "gamma" in k for k in state_dict.keys()))
         ):
             arch = "bitnet"
         else:
@@ -101,16 +111,28 @@ def export_svd(
 
     print(f"  Auto-detected Model Architecture: {arch.upper()}")
 
-    dim = cfg.get("dim", state_dict["tok_embeddings.weight"].shape[1])
-    vocab_size = cfg.get("vocab_size", state_dict["tok_embeddings.weight"].shape[0])
-    n_layers = cfg.get(
-        "n_layers",
-        len([k for k in state_dict.keys() if k.endswith(".attention_norm.weight")]),
+    dim = (
+        cfg.get("dim", state_dict["tok_embeddings.weight"].shape[1])
+        if state_dict
+        else cfg.get("dim", 128)
+    )
+    vocab_size = (
+        cfg.get("vocab_size", state_dict["tok_embeddings.weight"].shape[0])
+        if state_dict
+        else cfg.get("vocab_size", 4000)
+    )
+    n_layers = (
+        cfg.get(
+            "n_layers",
+            len([k for k in state_dict.keys() if k.endswith(".attention_norm.weight")]),
+        )
+        if state_dict
+        else cfg.get("n_layers", 4)
     )
     n_heads = cfg.get("n_heads", 4)
     n_kv_heads = cfg.get("n_kv_heads", n_heads)
 
-    if "layers.0.feed_forward.w1.weight" in state_dict:
+    if state_dict and "layers.0.feed_forward.w1.weight" in state_dict:
         ffn_dim = cfg.get("ffn_dim", state_dict["layers.0.feed_forward.w1.weight"].shape[0])
     else:
         ffn_dim = cfg.get("ffn_dim", 512)
@@ -127,7 +149,8 @@ def export_svd(
         ffn_dim=ffn_dim,
         max_seq_len=max_seq_len,
     )
-    model.load_state_dict(state_dict)
+    if state_dict:
+        model.load_state_dict(state_dict)
     model.eval()
 
     if os.path.dirname(output_path):
