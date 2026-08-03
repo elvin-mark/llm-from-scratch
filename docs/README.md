@@ -1,4 +1,8 @@
-# 📚 `llm-from-scratch` Technical Documentation Sitemap
+<div align="center">
+  <img src="assets/logo.jpg" alt="TinyLLM Logo" width="100%" style="max-width: 750px; border-radius: 10px;" />
+  <br/><br/>
+  <h1>📚 Technical Documentation Sitemap</h1>
+</div>
 
 Welcome to the documentation sitemap for **`llm-from-scratch`**. This repository provides complete mathematical, architectural, and low-level C/CUDA engine guides for building Large Language Models from first principles.
 

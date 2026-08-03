@@ -1,6 +1,9 @@
-# LLM from Scratch
-
-A simple, educational implementation of a custom causal language model built from scratch in PyTorch, utilizing modern transformer architecture principles (similar to Llama).
+<div align="center">
+  <img src="docs/assets/logo.jpg" alt="TinyLLM Logo" width="100%" style="max-width: 800px; border-radius: 10px;" />
+  <br/><br/>
+  <h1>LLM from Scratch</h1>
+  <p><em>Educational, Modular & High-Performance LLM Architecture Engine in PyTorch, Bare-Metal C & CUDA</em></p>
+</div>
 
 🌐 **Live Web Demo**: [https://llm-from-scratch-edu.web.app/](https://llm-from-scratch-edu.web.app/)
 
